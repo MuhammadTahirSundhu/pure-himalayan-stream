@@ -3,19 +3,12 @@ import { useRef } from 'react';
 import Autoplay from 'embla-carousel-autoplay';
 import { Button } from '@/components/ui/button';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
-import { Shield, Mountain, Leaf, ChevronRight, Star, Truck } from 'lucide-react';
+import { ChevronRight } from 'lucide-react';
 import { products } from '@/data/products';
 import ProductCard from '@/components/ProductCard';
 import Reveal from '@/components/Reveal';
+import TrustBadgesStrip from '@/components/TrustBadgesStrip';
 import heroBg from '@/assets/brand/hero-bg.jpg';
-
-const trustBadges = [
-  { icon: Shield, label: 'PSQCA Certified', desc: 'Government approved quality standards' },
-  { icon: Mountain, label: 'Himalayan Source', desc: 'Pure glacial spring water' },
-  { icon: Leaf, label: 'Eco-Friendly', desc: 'Sustainable packaging & process' },
-  { icon: Star, label: 'Premium Quality', desc: 'Tested every batch' },
-  { icon: Truck, label: 'Home Delivery', desc: 'Across major cities' },
-];
 
 export default function Home() {
   const autoplay = useRef(Autoplay({ delay: 3500, stopOnInteraction: false, stopOnMouseEnter: true }));
@@ -65,26 +58,8 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Trust Badges */}
-      <section className="py-12 bg-background border-b border-border">
-        <div className="container mx-auto px-4">
-          <div className="flex flex-wrap items-center justify-center gap-6 md:gap-10">
-            {trustBadges.map((badge, i) => (
-              <Reveal key={i} delay={i * 100} direction="scale">
-                <div className="flex items-center gap-3 group">
-                  <div className="w-12 h-12 rounded-xl water-gradient flex items-center justify-center shrink-0 group-hover:scale-110 group-hover:rotate-6 transition-transform duration-300">
-                    <badge.icon className="w-6 h-6 text-primary-foreground" />
-                  </div>
-                  <div>
-                    <p className="font-semibold text-sm text-foreground">{badge.label}</p>
-                    <p className="text-xs text-muted-foreground">{badge.desc}</p>
-                  </div>
-                </div>
-              </Reveal>
-            ))}
-          </div>
-        </div>
-      </section>
+      {/* Trust Badges Strip — links to Quality certifications */}
+      <TrustBadgesStrip />
 
       {/* Featured Products — Auto-play carousel */}
       <section className="py-16 bg-background overflow-hidden">
