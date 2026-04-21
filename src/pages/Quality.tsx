@@ -1,90 +1,118 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { qualityResults, purificationSteps } from '@/data/products';
+import { qualityResults } from '@/data/products';
 import { Table, TableHeader, TableHead, TableBody, TableRow, TableCell } from '@/components/ui/table';
-import { Shield, CheckCircle, Download, Droplets } from 'lucide-react';
+import { Shield, CheckCircle, Download, Droplets, Sparkles } from 'lucide-react';
+import PurificationPipeline from '@/components/PurificationPipeline';
+import Certifications from '@/components/Certifications';
+import Reveal from '@/components/Reveal';
 
 export default function Quality() {
-  const [activeStep, setActiveStep] = useState<number | null>(null);
-
   return (
-    <div className="py-16">
-      <div className="container mx-auto px-4">
-        <div className="text-center mb-12">
-          <h1 className="font-heading font-bold text-3xl md:text-4xl text-foreground mb-3">
-            Quality & <span className="text-primary">Purity</span>
-          </h1>
-          <p className="text-muted-foreground max-w-lg mx-auto">
-            Every drop of One Water undergoes a rigorous 10-step purification process and is tested against PSQCA standards.
-          </p>
+    <div>
+      {/* Hero */}
+      <section className="relative py-20 hero-gradient overflow-hidden">
+        {/* Floating water drops decoration */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none" aria-hidden>
+          <div className="absolute top-10 left-10 w-32 h-32 rounded-full bg-primary/10 blur-3xl animate-float-slow" />
+          <div className="absolute bottom-10 right-10 w-40 h-40 rounded-full bg-accent/10 blur-3xl animate-float" />
         </div>
+        <div className="container mx-auto px-4 relative z-10">
+          <Reveal className="text-center max-w-3xl mx-auto">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 border border-primary/20 mb-4">
+              <Sparkles className="w-4 h-4 text-primary" />
+              <span className="text-sm font-semibold text-primary">PSQCA Certified Purity</span>
+            </div>
+            <h1 className="font-heading font-bold text-4xl md:text-5xl lg:text-6xl text-foreground mb-4">
+              Quality & <span className="text-gradient">Purity</span>
+            </h1>
+            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+              Every drop of One Water travels through a meticulous 10-step purification journey,
+              tested rigorously against the highest international standards.
+            </p>
+          </Reveal>
+        </div>
+      </section>
 
-        {/* 10-Step Purification */}
-        <section className="mb-16">
-          <h2 className="font-heading font-semibold text-2xl text-foreground mb-8 text-center">
-            <Droplets className="inline w-6 h-6 text-primary mr-2" />
-            10-Step Purification Process
-          </h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4 max-w-5xl mx-auto">
-            {purificationSteps.map(step => (
-              <button
-                key={step.step}
-                className={`glass-card rounded-xl p-4 text-center transition-all cursor-pointer hover:shadow-lg hover:-translate-y-1 ${
-                  activeStep === step.step ? 'ring-2 ring-primary shadow-lg' : ''
-                }`}
-                onClick={() => setActiveStep(activeStep === step.step ? null : step.step)}
-              >
-                <div className="w-10 h-10 rounded-full water-gradient flex items-center justify-center mx-auto mb-2">
-                  <span className="text-sm font-bold text-primary-foreground">{step.step}</span>
-                </div>
-                <h4 className="font-semibold text-xs text-foreground mb-1">{step.title}</h4>
-                {activeStep === step.step && (
-                  <p className="text-xs text-muted-foreground mt-2 animate-in fade-in">{step.description}</p>
-                )}
-              </button>
-            ))}
-          </div>
-        </section>
+      {/* 10-Step Purification Pipeline */}
+      <section className="py-20 bg-background relative overflow-hidden">
+        <div className="container mx-auto px-4">
+          <Reveal className="text-center mb-16">
+            <div className="inline-flex items-center gap-2 mb-3">
+              <Droplets className="w-6 h-6 text-primary" />
+              <span className="text-sm font-bold uppercase tracking-wider text-primary">
+                Purification Journey
+              </span>
+            </div>
+            <h2 className="font-heading font-bold text-3xl md:text-4xl text-foreground mb-3">
+              Our <span className="text-primary">10-Step</span> Process
+            </h2>
+            <p className="text-muted-foreground max-w-xl mx-auto">
+              From the icy Himalayan glaciers to your hands — follow the path of every drop.
+            </p>
+          </Reveal>
 
-        {/* PSQCA Table */}
-        <section className="mb-16 max-w-3xl mx-auto">
-          <h2 className="font-heading font-semibold text-2xl text-foreground mb-6 text-center">
-            <Shield className="inline w-6 h-6 text-primary mr-2" />
-            PSQCA Lab Results
-          </h2>
-          <div className="glass-card rounded-xl overflow-hidden">
-            <Table>
-              <TableHeader>
-                <TableRow className="water-gradient">
-                  <TableHead className="text-primary-foreground font-semibold">Parameter</TableHead>
-                  <TableHead className="text-primary-foreground font-semibold">PSQCA Max</TableHead>
-                  <TableHead className="text-primary-foreground font-semibold">Our Result</TableHead>
-                  <TableHead className="text-primary-foreground font-semibold">Status</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {qualityResults.map((row, i) => (
-                  <TableRow key={i}>
-                    <TableCell className="font-medium">{row.parameter}</TableCell>
-                    <TableCell>{row.allowedMax} {row.unit}</TableCell>
-                    <TableCell className="font-semibold text-primary">{row.actual} {row.unit}</TableCell>
-                    <TableCell>
-                      <CheckCircle className="w-5 h-5 text-accent" />
-                    </TableCell>
+          <PurificationPipeline />
+        </div>
+      </section>
+
+      {/* Certifications */}
+      <Certifications />
+
+      {/* PSQCA Lab Results */}
+      <section className="py-20 bg-background">
+        <div className="container mx-auto px-4 max-w-4xl">
+          <Reveal className="text-center mb-10">
+            <div className="inline-flex items-center gap-2 mb-3">
+              <Shield className="w-6 h-6 text-primary" />
+              <span className="text-sm font-bold uppercase tracking-wider text-primary">
+                Independent Testing
+              </span>
+            </div>
+            <h2 className="font-heading font-bold text-3xl md:text-4xl text-foreground mb-3">
+              PSQCA Lab <span className="text-primary">Results</span>
+            </h2>
+            <p className="text-muted-foreground">
+              Transparent, parameter-by-parameter results — well within all safety limits.
+            </p>
+          </Reveal>
+
+          <Reveal direction="scale">
+            <div className="glass-card rounded-2xl overflow-hidden shadow-xl">
+              <Table>
+                <TableHeader>
+                  <TableRow className="water-gradient hover:bg-transparent">
+                    <TableHead className="text-primary-foreground font-semibold">Parameter</TableHead>
+                    <TableHead className="text-primary-foreground font-semibold">PSQCA Max</TableHead>
+                    <TableHead className="text-primary-foreground font-semibold">Our Result</TableHead>
+                    <TableHead className="text-primary-foreground font-semibold text-right">Status</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        </section>
+                </TableHeader>
+                <TableBody>
+                  {qualityResults.map((row, i) => (
+                    <TableRow key={i} className="hover:bg-water-ice/30 transition-colors">
+                      <TableCell className="font-medium">{row.parameter}</TableCell>
+                      <TableCell className="text-muted-foreground">{row.allowedMax} {row.unit}</TableCell>
+                      <TableCell className="font-semibold text-primary">{row.actual} {row.unit}</TableCell>
+                      <TableCell className="text-right">
+                        <span className="inline-flex items-center gap-1 text-accent text-sm font-medium">
+                          <CheckCircle className="w-4 h-4" /> Pass
+                        </span>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </Reveal>
 
-        {/* Download */}
-        <div className="text-center">
-          <Button size="lg" className="water-gradient text-primary-foreground font-semibold">
-            <Download className="w-5 h-5 mr-2" /> Download Full Lab Report (PDF)
-          </Button>
+          <Reveal className="text-center mt-10">
+            <Button size="lg" className="water-gradient text-primary-foreground font-semibold shadow-lg shadow-primary/30 hover:shadow-xl hover:shadow-primary/40 transition-all hover:-translate-y-0.5">
+              <Download className="w-5 h-5 mr-2" /> Download Full Lab Report (PDF)
+            </Button>
+          </Reveal>
         </div>
-      </div>
+      </section>
     </div>
   );
 }
