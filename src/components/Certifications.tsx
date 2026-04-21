@@ -10,19 +10,19 @@ import cert5 from '@/assets/certificates/5.jpeg';
 import cert6 from '@/assets/certificates/6.jpeg';
 
 const certificates = [
-  { src: cert1, title: 'PSQCA Certification' },
-  { src: cert2, title: 'Quality Standard Approval' },
-  { src: cert3, title: 'Lab Test Certificate' },
-  { src: cert4, title: 'Compliance Document' },
-  { src: cert5, title: 'Government License' },
-  { src: cert6, title: 'Quality Assurance' },
+  { src: cert1, title: 'Punjab Food Authority License', issuer: 'PFA — Govt. of Punjab' },
+  { src: cert2, title: 'ISO 9001:2015 Quality Management', issuer: 'MR Group Certification' },
+  { src: cert3, title: 'SABIC Food-Grade Material Certificate', issuer: 'Saudi Basic Industries' },
+  { src: cert4, title: 'SES Traders FDA-Compliant Bottles', issuer: 'US FDA 21 CFR Compliant' },
+  { src: cert5, title: 'HMCA Halal Certification', issuer: 'Halal Montreal Authority' },
+  { src: cert6, title: 'PCRWR Water Quality Lab Report', issuer: 'Govt. of Pakistan — Ministry of Water Resources' },
 ];
 
 export default function Certifications() {
   const [open, setOpen] = useState<number | null>(null);
 
   return (
-    <section className="py-16 bg-gradient-to-b from-background via-water-ice/20 to-background">
+    <section id="certifications" className="py-16 bg-gradient-to-b from-background via-water-ice/20 to-background scroll-mt-20">
       <div className="container mx-auto px-4">
         <Reveal className="text-center mb-12">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-accent/10 border border-accent/20 mb-4">
@@ -52,11 +52,18 @@ export default function Certifications() {
                   className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                 />
                 {/* Overlay */}
-                <div className="absolute inset-0 bg-gradient-to-t from-foreground/80 via-foreground/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4">
-                  <div className="flex items-center gap-2 text-primary-foreground">
-                    <ZoomIn className="w-4 h-4" />
-                    <span className="text-sm font-semibold">{cert.title}</span>
+                <div className="absolute inset-0 bg-gradient-to-t from-foreground/90 via-foreground/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4 text-left">
+                  <div className="flex items-center gap-1.5 text-primary-foreground/80 text-xs mb-1">
+                    <ZoomIn className="w-3.5 h-3.5" />
+                    <span>Click to view</span>
                   </div>
+                  <p className="text-sm font-bold text-primary-foreground leading-tight">{cert.title}</p>
+                  <p className="text-[11px] text-primary-foreground/70 mt-0.5">{cert.issuer}</p>
+                </div>
+                {/* Always-visible caption strip */}
+                <div className="absolute bottom-0 left-0 right-0 bg-background/85 backdrop-blur-sm px-3 py-2 border-t border-border/50 group-hover:opacity-0 transition-opacity">
+                  <p className="text-xs font-semibold text-foreground truncate">{cert.title}</p>
+                  <p className="text-[10px] text-muted-foreground truncate">{cert.issuer}</p>
                 </div>
                 {/* Corner ribbon */}
                 <div className="absolute top-3 right-3 w-9 h-9 rounded-full water-gradient flex items-center justify-center shadow-lg">
@@ -68,16 +75,32 @@ export default function Certifications() {
         </div>
 
         <Dialog open={open !== null} onOpenChange={() => setOpen(null)}>
-          <DialogContent className="max-w-3xl p-2 bg-background/95 backdrop-blur-xl">
-            <DialogTitle className="sr-only">
+          <DialogContent className="max-w-3xl p-3 bg-background/95 backdrop-blur-xl max-h-[90vh] overflow-y-auto">
+            <DialogTitle className="px-2 pt-1 pb-2 text-base">
               {open !== null ? certificates[open].title : 'Certificate'}
+              {open !== null && (
+                <span className="block text-xs font-normal text-muted-foreground mt-0.5">
+                  {certificates[open].issuer}
+                </span>
+              )}
             </DialogTitle>
             {open !== null && (
-              <img
-                src={certificates[open].src}
-                alt={certificates[open].title}
-                className="w-full h-auto rounded-lg"
-              />
+              <>
+                <img
+                  src={certificates[open].src}
+                  alt={certificates[open].title}
+                  className="w-full h-auto rounded-lg border border-border"
+                />
+                <div className="flex justify-end pt-2">
+                  <a
+                    href={certificates[open].src}
+                    download
+                    className="inline-flex items-center gap-2 text-sm font-semibold text-primary hover:underline"
+                  >
+                    Download original
+                  </a>
+                </div>
+              </>
             )}
           </DialogContent>
         </Dialog>
