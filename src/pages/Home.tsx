@@ -4,7 +4,7 @@ import Autoplay from 'embla-carousel-autoplay';
 import { Button } from '@/components/ui/button';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 import { ChevronRight } from 'lucide-react';
-import { products } from '@/data/products';
+import { useProducts } from '@/hooks/useProducts';
 import ProductCard from '@/components/ProductCard';
 import Reveal from '@/components/Reveal';
 import TrustBadgesStrip from '@/components/TrustBadgesStrip';
@@ -12,12 +12,13 @@ import heroBg from '@/assets/brand/hero-bg.jpg';
 
 export default function Home() {
   const autoplay = useRef(Autoplay({ delay: 3500, stopOnInteraction: false, stopOnMouseEnter: true }));
+  const { data: products, isLoading } = useProducts();
 
   return (
     <div>
       {/* Hero */}
       <section className="relative min-h-[80vh] flex items-center justify-center overflow-hidden">
-        <img src={heroBg} alt="Himalayan mountains" className="absolute inset-0 w-full h-full object-cover" width={1920} height={1080} />
+        <img src={heroBg} alt="Pure Himalayan mountain source of OneWater Pakistan mineral water" className="absolute inset-0 w-full h-full object-cover" width={1920} height={1080} />
         <div className="absolute inset-0 bg-gradient-to-b from-foreground/60 via-foreground/30 to-background" />
 
         {/* Animated water ripples */}
@@ -80,7 +81,8 @@ export default function Home() {
               className="max-w-6xl mx-auto"
             >
               <CarouselContent className="-ml-4">
-                {products.map(p => (
+                {isLoading && <div className="p-8 text-center w-full">Loading premium products...</div>}
+                {products?.map(p => (
                   <CarouselItem key={p.id} className="pl-4 sm:basis-1/2 lg:basis-1/3 xl:basis-1/4">
                     <ProductCard product={p} />
                   </CarouselItem>

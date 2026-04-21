@@ -10,14 +10,22 @@ export default function CartSidebar() {
   const navigate = useNavigate();
   const [promoInput, setPromoInput] = useState('');
   const [promoError, setPromoError] = useState('');
+  const [isApplying, setIsApplying] = useState(false);
 
-  const handleApplyPromo = () => {
-    if (applyPromo(promoInput)) {
+  const handleApplyPromo = async () => {
+    if (!promoInput.trim()) return;
+    setIsApplying(true);
+    setPromoError('');
+    const valid = await applyPromo(promoInput.trim());
+    if (valid) {
       setPromoError('');
+      setPromoInput('');
     } else {
-      setPromoError('Invalid promo code');
+      setPromoError('Invalid or expired promo code.');
     }
+    setIsApplying(false);
   };
+
 
   if (!isOpen) return null;
 
@@ -78,7 +86,9 @@ export default function CartSidebar() {
                 onChange={e => setPromoInput(e.target.value)}
                 className="flex-1"
               />
-              <Button variant="outline" onClick={handleApplyPromo}>Apply</Button>
+              <Button variant="outline" onClick={handleApplyPromo} disabled={isApplying}>
+                {isApplying ? '...' : 'Apply'}
+              </Button>
             </div>
             {promoError && <p className="text-xs text-destructive">{promoError}</p>}
             {promoCode && <p className="text-xs text-accent">✓ {promoCode} applied — {discount}% off</p>}

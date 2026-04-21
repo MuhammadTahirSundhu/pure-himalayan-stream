@@ -1,7 +1,8 @@
-import { products } from '@/data/products';
+import { useProducts } from '@/hooks/useProducts';
 import ProductCard from '@/components/ProductCard';
 
 export default function Products() {
+  const { data: products, isLoading, error } = useProducts();
   return (
     <div className="py-16">
       <div className="container mx-auto px-4">
@@ -14,7 +15,9 @@ export default function Products() {
           </p>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
-          {products.map(p => (
+          {isLoading && <p>Loading products...</p>}
+          {error && <p>Failed to load products.</p>}
+          {products?.map(p => (
             <ProductCard key={p.id} product={p} />
           ))}
         </div>

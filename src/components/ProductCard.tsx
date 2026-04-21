@@ -16,7 +16,7 @@ export default function ProductCard({ product }: ProductCardProps) {
         <span className="absolute inset-1/2 w-24 h-24 -translate-x-1/2 -translate-y-1/2 rounded-full border border-primary/20 opacity-0 group-hover:opacity-100 group-hover:animate-ripple pointer-events-none" />
         <img
           src={product.image}
-          alt={product.name}
+          alt={`${product.name} - Premium Mineral Water`}
           loading="lazy"
           className="relative max-h-full max-w-full object-contain group-hover:scale-110 group-hover:-translate-y-1 transition-transform duration-500"
         />

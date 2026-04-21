@@ -1,115 +1,142 @@
+// server.js — OneWater Pakistan Backend
+// Entry point: Express app with security middleware and all API routes
+
 import express from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
 import dotenv from 'dotenv';
-import pool, { initDB } from './db.js';
+import path from 'path';
+import fs from 'fs';
+import { initDB } from './db.js';
+import { generalLimiter } from './middleware/rateLimiter.js';
+import { authMiddleware } from './middleware/auth.js';
+
+// Ensure uploads directory exists
+const uploadsDir = path.join(process.cwd(), 'uploads');
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir);
+}
+
+// Route imports — Public
+import productsRouter from './routes/products.js';
+import ordersRouter from './routes/orders.js';
+import contactRouter from './routes/contact.js';
+import promoRouter from './routes/promo.js';
+
+// Route imports — Admin
+import adminAuthRouter from './routes/admin/auth.js';
+import adminOrdersRouter from './routes/admin/orders.js';
+import adminStatsRouter from './routes/admin/stats.js';
+import adminProductsRouter from './routes/admin/products.js';
+import adminMessagesRouter from './routes/admin/messages.js';
+import adminPromoCodesRouter from './routes/admin/promoCodes.js';
+import adminSettingsRouter from './routes/admin/settings.js';
 
 dotenv.config();
 
 const app = express();
-app.use(cors());
-app.use(express.json());
 
-// --- Database Auto-Initialization ---
-initDB().catch(console.error);
+// ─────────────────────────────────────────────
+// Security Middleware
+// ─────────────────────────────────────────────
 
-// --- Endpoints ---
+// Helmet sets secure HTTP response headers
+app.use(helmet());
 
-// 1. Get Products
-app.get('/api/products', async (req, res) => {
-  try {
-    const result = await pool.query('SELECT * FROM public.products ORDER BY price ASC');
-    res.json(result.rows);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
+// CORS — tightly scoped to the frontend origin
+const allowedOrigins = [
+  'http://localhost:8080',
+  'http://localhost:5173',
+  process.env.FRONTEND_URL, // Set in .env to your Vercel domain
+].filter(Boolean);
 
-// 2. Submit Contact Form
-app.post('/api/contact', async (req, res) => {
-  const { name, phone, email, message } = req.body;
-  try {
-    const result = await pool.query(
-      'INSERT INTO public.contact_messages (name, phone, email, message) VALUES ($1, $2, $3, $4) RETURNING id',
-      [name, phone, email, message]
-    );
-    res.json({ success: true, id: result.rows[0].id });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// 3. Submit Order
-app.post('/api/orders', async (req, res) => {
-  const { customer_name, phone, city, area, street, payment_method, total, items, order_ref } = req.body;
-  
-  const client = await pool.connect();
-  try {
-    await client.query('BEGIN');
-    
-    // Insert order
-    const orderResult = await client.query(
-      `INSERT INTO public.orders 
-       (order_ref, customer_name, phone, city, area, street, payment_method, total) 
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id`,
-      [order_ref, customer_name, phone, city, area, street, payment_method, total]
-    );
-    
-    const orderId = orderResult.rows[0].id;
-
-    // Insert order items
-    for (const item of items) {
-      await client.query(
-        `INSERT INTO public.order_items (order_id, product_id, product_name, quantity, price_at_time) 
-         VALUES ($1, $2, $3, $4, $5)`,
-        [orderId, item.id, item.name, item.quantity, item.price]
-      );
+app.use(cors({
+  origin: (origin, callback) => {
+    // Allow requests with no origin (e.g., curl, Postman, server-to-server)
+    if (!origin || allowedOrigins.includes(origin)) {
+      return callback(null, true);
     }
-    
-    await client.query('COMMIT');
-    res.json({ success: true, orderId });
-  } catch (err) {
-    await client.query('ROLLBACK');
-    res.status(500).json({ error: err.message });
-  } finally {
-    client.release();
-  }
+    callback(new Error(`CORS: Origin '${origin}' is not allowed.`));
+  },
+  credentials: true,
+}));
+
+// Body parsing
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true }));
+
+// General rate limiter applied to all routes
+app.use(generalLimiter);
+
+// Static files for uploaded screenshots
+app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
+
+// ─────────────────────────────────────────────
+// Health Check
+// ─────────────────────────────────────────────
+app.get('/api/health', (req, res) => {
+  res.json({ 
+    status: 'ok', 
+    brand: 'OneWater Pakistan',
+    timestamp: new Date().toISOString() 
+  });
 });
 
-// 4. Admin Get Orders
-app.get('/api/admin/orders', async (req, res) => {
-  try {
-    // Fetch orders with items as JSON array
-    const result = await pool.query(`
-      SELECT o.*, 
-        COALESCE(
-          json_agg(
-            json_build_object('name', oi.product_name, 'quantity', oi.quantity)
-          ) FILTER (WHERE oi.id IS NOT NULL), '[]'
-        ) as items
-      FROM public.orders o
-      LEFT JOIN public.order_items oi ON o.id = oi.order_id
-      GROUP BY o.id
-      ORDER BY o.created_at DESC
-    `);
-    res.json(result.rows);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+// ─────────────────────────────────────────────
+// Public Routes (no auth required)
+// ─────────────────────────────────────────────
+app.use('/api/products', productsRouter);
+app.use('/api/orders', ordersRouter);
+app.use('/api/contact', contactRouter);
+app.use('/api/promo', promoRouter);
+
+// ─────────────────────────────────────────────
+// Admin Auth Route (no auth middleware — this IS the login)
+// ─────────────────────────────────────────────
+app.use('/api/admin', adminAuthRouter);
+
+// ─────────────────────────────────────────────
+// Protected Admin Routes (JWT required)
+// ─────────────────────────────────────────────
+app.use('/api/admin/orders', authMiddleware, adminOrdersRouter);
+app.use('/api/admin/stats', authMiddleware, adminStatsRouter);
+app.use('/api/admin/products', authMiddleware, adminProductsRouter);
+app.use('/api/admin/messages', authMiddleware, adminMessagesRouter);
+app.use('/api/admin/promo-codes', authMiddleware, adminPromoCodesRouter);
+app.use('/api/admin/settings', authMiddleware, adminSettingsRouter);
+
+// ─────────────────────────────────────────────
+// Global Error Handler
+// ─────────────────────────────────────────────
+// eslint-disable-next-line no-unused-vars
+app.use((err, req, res, next) => {
+  console.error('[server] Unhandled error:', err.message);
+  res.status(500).json({ error: 'InternalServerError', message: 'Something went wrong.' });
 });
 
-// 5. Admin Update Order Status
-app.put('/api/admin/orders/:id/status', async (req, res) => {
-  const { id } = req.params;
-  const { status } = req.body;
-  try {
-    await pool.query('UPDATE public.orders SET status = $1 WHERE id = $2', [status, id]);
-    res.json({ success: true });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+// 404 fallback for unknown API routes
+app.use('/api/*', (req, res) => {
+  res.status(404).json({ error: 'NotFound', message: `Route ${req.method} ${req.path} does not exist.` });
 });
 
+// ─────────────────────────────────────────────
+// Start Server
+// ─────────────────────────────────────────────
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`Backend server strictly running on http://localhost:${PORT}`);
-});
+
+const startServer = async () => {
+  try {
+    // Auto-initialize database tables and seed data on startup
+    await initDB();
+    app.listen(PORT, () => {
+      console.log(`\n🌊 OneWater Pakistan — Backend Server`);
+      console.log(`   Running on: http://localhost:${PORT}`);
+      console.log(`   Environment: ${process.env.NODE_ENV || 'development'}\n`);
+    });
+  } catch (err) {
+    console.error('❌ Failed to start server:', err.message);
+    process.exit(1);
+  }
+};
+
+startServer();

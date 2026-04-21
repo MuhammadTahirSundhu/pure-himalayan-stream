@@ -1,24 +1,49 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Lock, Droplets } from 'lucide-react';
-
-const ADMIN_PASSWORD = 'onewater2026';
+import { Lock, Droplets, AlertCircle } from 'lucide-react';
 
 interface AdminLoginProps {
   onLogin: () => void;
 }
 
 export default function AdminLogin({ onLogin }: AdminLoginProps) {
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleLogin = () => {
-    if (password === ADMIN_PASSWORD) {
-      localStorage.setItem('ow_admin', 'true');
+  const handleLogin = async () => {
+    if (!username || !password) {
+      setError('Please enter both username and password.');
+      return;
+    }
+
+    setIsLoading(true);
+    setError('');
+
+    try {
+      const response = await fetch('/api/admin/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError(data.message || 'Login failed. Please try again.');
+        return;
+      }
+
+      // Store JWT token and admin info in localStorage
+      localStorage.setItem('ow_admin_token', data.token);
+      localStorage.setItem('ow_admin_user', data.admin.username);
       onLogin();
-    } else {
-      setError('Incorrect password');
+    } catch {
+      setError('Network error. Please check your connection.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -29,20 +54,44 @@ export default function AdminLogin({ onLogin }: AdminLoginProps) {
           <Droplets className="w-7 h-7 text-primary-foreground" />
         </div>
         <h1 className="font-heading font-bold text-2xl text-foreground mb-1">Admin Panel</h1>
-        <p className="text-sm text-muted-foreground mb-6">One Water Management</p>
-        <div className="space-y-3">
+        <p className="text-sm text-muted-foreground mb-6">OneWater Pakistan Management</p>
+
+        <div className="space-y-3 text-left">
+          <Input
+            type="text"
+            placeholder="Username"
+            value={username}
+            onChange={e => { setUsername(e.target.value); setError(''); }}
+            onKeyDown={e => e.key === 'Enter' && handleLogin()}
+            autoComplete="username"
+          />
           <Input
             type="password"
-            placeholder="Enter admin password"
+            placeholder="Password"
             value={password}
             onChange={e => { setPassword(e.target.value); setError(''); }}
             onKeyDown={e => e.key === 'Enter' && handleLogin()}
+            autoComplete="current-password"
           />
-          {error && <p className="text-xs text-destructive">{error}</p>}
-          <Button className="w-full water-gradient text-primary-foreground font-semibold" onClick={handleLogin}>
-            <Lock className="w-4 h-4 mr-2" /> Login
+          {error && (
+            <div className="flex items-center gap-2 text-destructive text-xs">
+              <AlertCircle className="w-3 h-3 shrink-0" />
+              <span>{error}</span>
+            </div>
+          )}
+          <Button
+            className="w-full water-gradient text-primary-foreground font-semibold"
+            onClick={handleLogin}
+            disabled={isLoading}
+          >
+            <Lock className="w-4 h-4 mr-2" />
+            {isLoading ? 'Signing in...' : 'Login'}
           </Button>
         </div>
+
+        <p className="text-xs text-muted-foreground mt-6">
+          OneWater Pakistan © {new Date().getFullYear()}
+        </p>
       </div>
     </div>
   );

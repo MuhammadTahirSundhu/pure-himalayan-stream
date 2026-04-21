@@ -26,17 +26,10 @@ interface CartContextType {
   promoCode: string;
   setPromoCode: (code: string) => void;
   discount: number;
-  applyPromo: (code: string) => boolean;
+  applyPromo: (code: string) => Promise<boolean>;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
-
-const PROMO_CODES: Record<string, number> = {
-  'EID2026': 15,
-  'RAMADAN10': 10,
-  'ONEWATER20': 20,
-  'WELCOME5': 5,
-};
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
@@ -73,14 +66,29 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     setDiscount(0);
   }, []);
 
-  const applyPromo = useCallback((code: string) => {
-    const upper = code.toUpperCase();
-    if (PROMO_CODES[upper]) {
-      setPromoCode(upper);
-      setDiscount(PROMO_CODES[upper]);
-      return true;
+  /**
+   * applyPromo — validates the promo code against the backend API.
+   * Returns true if valid, false otherwise.
+   */
+  const applyPromo = useCallback(async (code: string): Promise<boolean> => {
+    try {
+      const response = await fetch('/api/promo/validate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code }),
+      });
+      const data = await response.json();
+
+      if (data.valid) {
+        setPromoCode(data.code);
+        setDiscount(data.discount_percentage);
+        return true;
+      }
+      return false;
+    } catch (err) {
+      console.error('Failed to validate promo code:', err);
+      return false;
     }
-    return false;
   }, []);
 
   const subtotal = items.reduce((sum, item) => sum + item.price * item.quantity + (item.deposit || 0), 0);

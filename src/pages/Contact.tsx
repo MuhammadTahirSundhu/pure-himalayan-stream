@@ -1,9 +1,36 @@
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Phone, Mail, MapPin, MessageCircle } from 'lucide-react';
+import { Phone, Mail, MapPin, MessageCircle, CheckCircle2 } from 'lucide-react';
 
 export default function Contact() {
+  const [form, setForm] = useState({ name: '', phone: '', email: '', message: '' });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    try {
+      const response = await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form),
+      });
+      if (response.ok) {
+        setIsSuccess(true);
+        setForm({ name: '', phone: '', email: '', message: '' });
+      } else {
+        throw new Error('Failed to send message');
+      }
+    } catch (err) {
+      alert('Error sending message. Please try again later.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <div className="py-16">
       <div className="container mx-auto px-4">
@@ -81,14 +108,50 @@ export default function Contact() {
 
           {/* Contact Form */}
           <div className="glass-card rounded-2xl p-6 space-y-4 h-fit">
-            <h2 className="font-heading font-semibold text-xl text-foreground mb-2">Send us a Message</h2>
-            <Input placeholder="Full Name" />
-            <Input placeholder="Phone Number" />
-            <Input placeholder="Email Address" type="email" />
-            <Textarea placeholder="Your Message" rows={5} />
-            <Button className="w-full water-gradient text-primary-foreground font-semibold">
-              Send Message
-            </Button>
+            {isSuccess ? (
+              <div className="py-8 text-center space-y-4">
+                <CheckCircle2 className="w-16 h-16 text-accent mx-auto" />
+                <h2 className="font-heading font-semibold text-xl text-foreground">Message Sent!</h2>
+                <p className="text-muted-foreground">Thank you for reaching out. We'll get back to you shortly.</p>
+                <Button variant="outline" onClick={() => setIsSuccess(false)}>Send Another Message</Button>
+              </div>
+            ) : (
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <h2 className="font-heading font-semibold text-xl text-foreground mb-2">Send us a Message</h2>
+                <Input 
+                  placeholder="Full Name" 
+                  value={form.name} 
+                  onChange={e => setForm({ ...form, name: e.target.value })} 
+                  required 
+                />
+                <Input 
+                  placeholder="Phone Number" 
+                  value={form.phone} 
+                  onChange={e => setForm({ ...form, phone: e.target.value })} 
+                />
+                <Input 
+                  placeholder="Email Address" 
+                  type="email" 
+                  value={form.email} 
+                  onChange={e => setForm({ ...form, email: e.target.value })} 
+                  required 
+                />
+                <Textarea 
+                  placeholder="Your Message" 
+                  rows={5} 
+                  value={form.message} 
+                  onChange={e => setForm({ ...form, message: e.target.value })} 
+                  required 
+                />
+                <Button 
+                  type="submit" 
+                  className="w-full water-gradient text-primary-foreground font-semibold"
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? 'Sending...' : 'Send Message'}
+                </Button>
+              </form>
+            )}
           </div>
         </div>
       </div>

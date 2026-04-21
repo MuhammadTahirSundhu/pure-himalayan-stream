@@ -20,14 +20,68 @@ export default function Checkout() {
   const [paymentMethod, setPaymentMethod] = useState('');
   const [screenshot, setScreenshot] = useState<File | null>(null);
   const [orderRef, setOrderRef] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const selectedPayment = paymentMethods.find(p => p.id === paymentMethod);
 
-  const handleSubmitOrder = () => {
+  const handleSubmitOrder = async () => {
+    setIsSubmitting(true);
     const ref = `OW-${Date.now().toString(36).toUpperCase()}`;
-    setOrderRef(ref);
-    setStep(5);
-    clearCart();
+    
+    try {
+      let screenshot_url = null;
+
+      // 1. Upload screenshot if a payment requires one
+      if (screenshot) {
+        const formData = new FormData();
+        formData.append('screenshot', screenshot);
+
+        const uploadRes = await fetch('/api/orders/screenshot', {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (!uploadRes.ok) {
+          throw new Error("Failed to upload screenshot.");
+        }
+        const uploadData = await uploadRes.json();
+        screenshot_url = uploadData.url;
+      }
+
+      // 2. Submit final order
+      const response = await fetch('/api/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          order_ref: ref,
+          customer_name: form.name,
+          phone: form.phone,
+          city: form.city,
+          area: form.area,
+          street: form.street,
+          payment_method: paymentMethod,
+          total: total,
+          screenshot_url,
+          items: items.map(p => ({
+            id: p.id,
+            name: p.name,
+            quantity: p.quantity,
+            price: p.price
+          }))
+        })
+      });
+
+      if (!response.ok) throw new Error("Failed to submit order.");
+      
+      setOrderRef(ref);
+      setStep(5);
+      clearCart();
+    } catch (err) {
+      alert("There was an error submitting your order. Please try again.");
+      console.error(err);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (items.length === 0 && step < 5) {
@@ -181,10 +235,10 @@ export default function Checkout() {
               <Button variant="outline" onClick={() => setStep(paymentMethod === 'cod' ? 2 : 3)}>Back</Button>
               <Button
                 className="flex-1 water-gradient text-primary-foreground font-semibold"
-                disabled={paymentMethod !== 'cod' && !screenshot}
+                disabled={(paymentMethod !== 'cod' && !screenshot) || isSubmitting}
                 onClick={handleSubmitOrder}
               >
-                {paymentMethod === 'cod' ? 'Place Order (COD)' : 'Submit Order'}
+                {isSubmitting ? 'Submitting...' : (paymentMethod === 'cod' ? 'Place Order (COD)' : 'Submit Order')}
               </Button>
             </div>
           </div>
