@@ -87,7 +87,7 @@ export default function Contact() {
               </div>
               <div>
                 <p className="font-semibold text-foreground">Plant Address</p>
-                <p className="text-sm text-muted-foreground">One Water Processing Plant, GT Road, Gujranwala, Punjab, Pakistan</p>
+                <p className="text-sm text-muted-foreground">One Water – Main Office Green Valley Phase 1, near Sialkot Bypass, Gujranwala</p>
               </div>
             </div>
 
@@ -137,11 +137,12 @@ export default function Contact() {
                   required 
                 />
                 <Textarea 
-                  placeholder="Your Message" 
+                  placeholder="Your Message (at least 10 characters)" 
                   rows={5} 
                   value={form.message} 
                   onChange={e => setForm({ ...form, message: e.target.value })} 
                   required 
+                  minLength={10}
                 />
                 <Button 
                   type="submit" 

@@ -64,7 +64,7 @@ export default function Footer() {
               </a>
               <div className="flex items-start gap-2">
                 <MapPin className="w-4 h-4 mt-0.5 shrink-0" />
-                <span>One Water Plant, GT Road, Gujranwala, Punjab, Pakistan</span>
+                <span>One Water – Main Office Green Valley Phase 1, near Sialkot Bypass, Gujranwala</span>
               </div>
             </div>
           </div>

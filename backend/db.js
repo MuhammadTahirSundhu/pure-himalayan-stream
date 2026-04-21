@@ -81,12 +81,14 @@ export const initDB = async () => {
       CREATE TABLE IF NOT EXISTS public.order_items (
         id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
         order_id uuid REFERENCES public.orders(id) ON DELETE CASCADE,
-        product_id text REFERENCES public.products(id),
+        product_id text NOT NULL,
         product_name text NOT NULL,
         quantity integer NOT NULL,
         price_at_time numeric NOT NULL
       );
     `);
+
+
 
     // ── Contact Messages ──────────────────────────────────────────────────
     await client.query(`
@@ -178,8 +180,43 @@ export const initDB = async () => {
       console.log(`   ⚠️  Change the password immediately after first login!`);
     }
 
+    // ── Event Inquiries ───────────────────────────────────────────────────
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS public.event_inquiries (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        name text NOT NULL,
+        phone text NOT NULL,
+        email text,
+        event_date text,
+        event_location text,
+        bottle_size text,
+        quantity text,
+        notes text,
+        created_at timestamptz DEFAULT now()
+      );
+    `);
+
     await client.query('COMMIT');
     console.log('✅ Database initialized successfully.\n');
+
+    // ── Post-transaction patches (DDL that can't run inside transactions) ──
+    // Drop old FK constraint on order_items.product_id if it exists
+    try {
+      const fkResult = await pool.query(`
+        SELECT constraint_name FROM information_schema.table_constraints
+        WHERE table_name = 'order_items'
+          AND constraint_type = 'FOREIGN KEY'
+          AND constraint_name LIKE '%product_id%'
+      `);
+      if (fkResult.rows.length > 0) {
+        const constraintName = fkResult.rows[0].constraint_name;
+        await pool.query(`ALTER TABLE public.order_items DROP CONSTRAINT "${constraintName}"`);
+        console.log(`🔧 Dropped FK constraint: ${constraintName}`);
+      }
+    } catch (fkErr) {
+      // Constraint may already be gone — that's fine
+      console.log('ℹ️  FK patch skipped (already clean):', fkErr.message);
+    }
   } catch (err) {
     await client.query('ROLLBACK');
     console.error('❌ Database initialization failed:', err.message);

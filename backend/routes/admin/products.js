@@ -1,5 +1,5 @@
 // routes/admin/products.js — OneWater Pakistan
-// Admin product management endpoints
+// Admin product management endpoints (GET, POST, PUT, DELETE)
 
 import { Router } from 'express';
 import { body, param } from 'express-validator';
@@ -23,6 +23,43 @@ router.get('/', async (req, res) => {
 });
 
 /**
+ * POST /api/admin/products
+ * Creates a new product.
+ * Body: { id, name, size, price, description?, image_url?, category }
+ */
+router.post(
+  '/',
+  [
+    body('id').notEmpty().trim().withMessage('Product ID is required'),
+    body('name').notEmpty().trim().withMessage('Product name is required'),
+    body('size').notEmpty().trim().withMessage('Size is required'),
+    body('price').isNumeric().withMessage('Price must be a number'),
+    body('category').isIn(['bottle', 'dispenser']).withMessage('Category must be bottle or dispenser'),
+    body('description').optional().trim(),
+    body('image_url').optional().trim(),
+  ],
+  validate,
+  async (req, res) => {
+    const { id, name, size, price, description, image_url, category } = req.body;
+    try {
+      const result = await pool.query(
+        `INSERT INTO public.products (id, name, size, price, description, image_url, category, in_stock)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, true) RETURNING *`,
+        [id, name, size, price, description || null, image_url || null, category]
+      );
+      console.log(`[admin/products] Created product: ${id} — ${name}`);
+      res.status(201).json({ success: true, product: result.rows[0] });
+    } catch (err) {
+      console.error('[admin/products] POST error:', err.message);
+      if (err.code === '23505') {
+        return res.status(409).json({ error: 'Duplicate', message: 'A product with this ID already exists.' });
+      }
+      res.status(500).json({ error: 'ServerError', message: 'Failed to create product.' });
+    }
+  }
+);
+
+/**
  * PUT /api/admin/products/:id
  * Updates a product's price, stock status, or description.
  * Body: { price?, in_stock?, description?, name? }
@@ -42,7 +79,6 @@ router.put(
     const { price, in_stock, description, name } = req.body;
 
     try {
-      // Build dynamic SET clause for only provided fields
       const fields = [];
       const values = [];
       let idx = 1;
@@ -71,6 +107,30 @@ router.put(
     } catch (err) {
       console.error('[admin/products] PUT /:id error:', err.message);
       res.status(500).json({ error: 'ServerError', message: 'Failed to update product.' });
+    }
+  }
+);
+
+/**
+ * DELETE /api/admin/products/:id
+ * Deletes a product by ID.
+ */
+router.delete(
+  '/:id',
+  [param('id').notEmpty()],
+  validate,
+  async (req, res) => {
+    const { id } = req.params;
+    try {
+      const result = await pool.query('DELETE FROM public.products WHERE id = $1 RETURNING id', [id]);
+      if (result.rows.length === 0) {
+        return res.status(404).json({ error: 'NotFound', message: 'Product not found.' });
+      }
+      console.log(`[admin/products] Product ${id} deleted`);
+      res.json({ success: true });
+    } catch (err) {
+      console.error('[admin/products] DELETE /:id error:', err.message);
+      res.status(500).json({ error: 'ServerError', message: 'Failed to delete product.' });
     }
   }
 );
