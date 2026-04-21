@@ -1,11 +1,11 @@
-import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { qualityResults } from '@/data/products';
 import { Table, TableHeader, TableHead, TableBody, TableRow, TableCell } from '@/components/ui/table';
-import { Shield, CheckCircle, Download, Droplets, Sparkles } from 'lucide-react';
+import { Shield, CheckCircle, Download, Droplets, Sparkles, Award } from 'lucide-react';
 import PurificationPipeline from '@/components/PurificationPipeline';
 import Certifications from '@/components/Certifications';
 import Reveal from '@/components/Reveal';
+import labReport from '@/assets/certificates/6.jpeg';
 
 export default function Quality() {
   return (
@@ -106,9 +106,25 @@ export default function Quality() {
             </div>
           </Reveal>
 
-          <Reveal className="text-center mt-10">
-            <Button size="lg" className="water-gradient text-primary-foreground font-semibold shadow-lg shadow-primary/30 hover:shadow-xl hover:shadow-primary/40 transition-all hover:-translate-y-0.5">
-              <Download className="w-5 h-5 mr-2" /> Download Full Lab Report (PDF)
+          <Reveal className="text-center mt-10 flex flex-wrap gap-3 justify-center">
+            <Button
+              size="lg"
+              asChild
+              className="water-gradient text-primary-foreground font-semibold shadow-lg shadow-primary/30 hover:shadow-xl hover:shadow-primary/40 transition-all hover:-translate-y-0.5"
+            >
+              <a href={labReport} download="One-Water-PCRWR-Lab-Report.jpeg">
+                <Download className="w-5 h-5 mr-2" /> Download Full Lab Report
+              </a>
+            </Button>
+            <Button
+              size="lg"
+              variant="outline"
+              asChild
+              className="font-semibold border-primary/30 hover:bg-primary/5"
+            >
+              <a href="#certifications">
+                <Award className="w-5 h-5 mr-2" /> View All Certificates
+              </a>
             </Button>
           </Reveal>
         </div>
