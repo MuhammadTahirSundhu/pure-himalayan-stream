@@ -10,13 +10,15 @@ export default function ProductCard({ product }: ProductCardProps) {
   const { addItem } = useCart();
 
   return (
-    <div className="group glass-card rounded-2xl overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
-      <div className="aspect-square bg-gradient-to-b from-water-ice/30 to-background p-6 flex items-center justify-center">
+    <div className="group glass-card rounded-2xl overflow-hidden hover:shadow-2xl hover:shadow-primary/20 transition-all duration-500 hover:-translate-y-2 ripple-surface">
+      <div className="relative aspect-square bg-gradient-to-b from-water-ice/40 to-background p-6 flex items-center justify-center overflow-hidden">
+        {/* Decorative ripple rings */}
+        <span className="absolute inset-1/2 w-24 h-24 -translate-x-1/2 -translate-y-1/2 rounded-full border border-primary/20 opacity-0 group-hover:opacity-100 group-hover:animate-ripple pointer-events-none" />
         <img
           src={product.image}
           alt={product.name}
           loading="lazy"
-          className="max-h-full max-w-full object-contain group-hover:scale-105 transition-transform duration-300"
+          className="relative max-h-full max-w-full object-contain group-hover:scale-110 group-hover:-translate-y-1 transition-transform duration-500"
         />
       </div>
       <div className="p-5">
