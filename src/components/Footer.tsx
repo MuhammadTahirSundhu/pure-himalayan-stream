@@ -57,7 +57,7 @@ export default function Footer() {
             <h4 className="font-heading font-semibold text-primary-foreground mb-4">Contact</h4>
             <div className="flex flex-col gap-3 text-sm">
               <a href="tel:+923001234567" className="flex items-center gap-2 hover:text-primary transition-colors">
-                <Phone className="w-4 h-4" /> +92 302 7465757
+                <Phone className="w-4 h-4" /> 0320 313 3140
               </a>
               <a href="mailto:info@onewater.pk" className="flex items-center gap-2 hover:text-primary transition-colors">
                 <Mail className="w-4 h-4" /> info@onewater.pk

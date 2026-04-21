@@ -111,6 +111,11 @@ export const initDB = async () => {
       );
     `);
 
+    // Patch for older databases that might have created the table before we added created_at
+    await client.query(`
+      ALTER TABLE public.promo_codes ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now();
+    `);
+
     const promoCount = await client.query('SELECT COUNT(*) AS c FROM public.promo_codes');
     if (parseInt(promoCount.rows[0].c) === 0) {
       console.log('🌱 Seeding promo codes...');

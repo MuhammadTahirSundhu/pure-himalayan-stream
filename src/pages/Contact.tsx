@@ -47,7 +47,7 @@ export default function Contact() {
           {/* Contact Info */}
           <div className="space-y-6">
             <a
-              href="https://wa.me/+923027465757?text=Hi%20One%20Water!"
+              href="https://wa.me/+923203133140?text=Hi%20One%20Water!"
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-4 p-5 glass-card rounded-xl hover:shadow-lg transition-all group"
@@ -57,7 +57,7 @@ export default function Contact() {
               </div>
               <div>
                 <p className="font-semibold text-foreground">WhatsApp Chat</p>
-                <p className="text-sm text-muted-foreground">+92 302 7465757 — Instant Reply</p>
+                <p className="text-sm text-muted-foreground">0320 313 3140 — Instant Reply</p>
               </div>
             </a>
 
@@ -67,7 +67,7 @@ export default function Contact() {
               </div>
               <div>
                 <p className="font-semibold text-foreground">Phone</p>
-                <p className="text-sm text-muted-foreground">+92 302 7465757</p>
+                <p className="text-sm text-muted-foreground">0320 313 3140</p>
               </div>
             </div>
 
