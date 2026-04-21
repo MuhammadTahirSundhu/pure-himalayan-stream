@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { ShoppingCart, Menu, X, Droplets } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useCart } from '@/contexts/CartContext';
+import ThemeToggle from '@/components/ThemeToggle';
 
 const navLinks = [
   { to: '/', label: 'Home' },
@@ -48,12 +49,14 @@ export default function Navbar() {
           ))}
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1">
+          <ThemeToggle />
           <Button
             variant="ghost"
             size="icon"
             className="relative"
             onClick={() => setIsOpen(true)}
+            aria-label="Open cart"
           >
             <ShoppingCart className="w-5 h-5" />
             {itemCount > 0 && (
