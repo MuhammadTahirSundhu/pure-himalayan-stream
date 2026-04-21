@@ -4,9 +4,11 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { CartProvider } from "@/contexts/CartContext";
+import { ThemeProvider } from "@/contexts/ThemeContext";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import CartSidebar from "@/components/CartSidebar";
+import ScrollToHash from "@/components/ScrollToHash";
 import Home from "./pages/Home";
 import Products from "./pages/Products";
 import Delivery from "./pages/Delivery";
@@ -33,25 +35,28 @@ const CustomerLayout = ({ children }: { children: React.ReactNode }) => (
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <CartProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/admin" element={<Admin />} />
-            <Route path="/" element={<CustomerLayout><Home /></CustomerLayout>} />
-            <Route path="/products" element={<CustomerLayout><Products /></CustomerLayout>} />
-            <Route path="/delivery" element={<CustomerLayout><Delivery /></CustomerLayout>} />
-            <Route path="/quality" element={<CustomerLayout><Quality /></CustomerLayout>} />
-            <Route path="/offers" element={<CustomerLayout><Offers /></CustomerLayout>} />
-            <Route path="/events" element={<CustomerLayout><Events /></CustomerLayout>} />
-            <Route path="/about" element={<CustomerLayout><About /></CustomerLayout>} />
-            <Route path="/contact" element={<CustomerLayout><Contact /></CustomerLayout>} />
-            <Route path="/checkout" element={<CustomerLayout><Checkout /></CustomerLayout>} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </CartProvider>
+      <ThemeProvider>
+        <CartProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <ScrollToHash />
+            <Routes>
+              <Route path="/admin" element={<Admin />} />
+              <Route path="/" element={<CustomerLayout><Home /></CustomerLayout>} />
+              <Route path="/products" element={<CustomerLayout><Products /></CustomerLayout>} />
+              <Route path="/delivery" element={<CustomerLayout><Delivery /></CustomerLayout>} />
+              <Route path="/quality" element={<CustomerLayout><Quality /></CustomerLayout>} />
+              <Route path="/offers" element={<CustomerLayout><Offers /></CustomerLayout>} />
+              <Route path="/events" element={<CustomerLayout><Events /></CustomerLayout>} />
+              <Route path="/about" element={<CustomerLayout><About /></CustomerLayout>} />
+              <Route path="/contact" element={<CustomerLayout><Contact /></CustomerLayout>} />
+              <Route path="/checkout" element={<CustomerLayout><Checkout /></CustomerLayout>} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </CartProvider>
+      </ThemeProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );
