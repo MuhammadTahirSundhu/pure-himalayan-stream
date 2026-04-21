@@ -4,8 +4,25 @@
 import { Router } from 'express';
 import { body } from 'express-validator';
 import bcrypt from 'bcryptjs';
+import multer from 'multer';
+import { v2 as cloudinary } from 'cloudinary';
 import { validate } from '../../middleware/validate.js';
 import pool from '../../db.js';
+
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key:    process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB max for PDF
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype === 'application/pdf') cb(null, true);
+    else cb(new Error('Only PDF files are allowed'));
+  },
+});
 
 const router = Router();
 
@@ -63,6 +80,48 @@ router.put(
     }
   }
 );
+
+/**
+ * POST /api/admin/settings/quality
+ * Uploads a lab report PDF and updates the lab_report_url in site_settings.
+ */
+router.post('/quality', upload.single('report'), async (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ error: 'NoFile', message: 'Please provide a PDF file.' });
+  }
+
+  try {
+    // Upload buffer to Cloudinary
+    const result = await new Promise((resolve, reject) => {
+      const stream = cloudinary.uploader.upload_stream(
+        {
+          folder: 'onewater/quality',
+          resource_type: 'raw', // PDFs are 'raw' or 'image'. Often 'image' lets them have thumbnails, but 'raw' is safer for downloads.
+          format: 'pdf',
+        },
+        (error, result) => {
+          if (error) reject(error);
+          else resolve(result);
+        }
+      );
+      stream.end(req.file.buffer);
+    });
+
+    console.log(`[admin/settings/quality] Uploaded report to Cloudinary: ${result.secure_url}`);
+    
+    // Save URL to site_settings
+    await pool.query(
+      `INSERT INTO public.site_settings (key, value) VALUES ($1, $2)
+       ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value`,
+      ['lab_report_url', JSON.stringify(result.secure_url)]
+    );
+
+    res.json({ success: true, url: result.secure_url });
+  } catch (err) {
+    console.error('[admin/settings/quality] Upload error:', err.message);
+    res.status(500).json({ error: 'ServerError', message: 'Failed to upload report.' });
+  }
+});
 
 /**
  * PUT /api/admin/password

@@ -5,6 +5,8 @@ import { useCart } from '@/contexts/CartContext';
 import { CheckCircle, Upload, CreditCard, Truck, User } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
+const API_URL = import.meta.env.VITE_API_URL || '';
+
 const paymentMethods = [
   { id: 'easypaisa', name: 'Easypaisa', account: '0300-1234567', color: 'bg-green-500' },
   { id: 'jazzcash', name: 'JazzCash', account: '0301-7654321', color: 'bg-red-500' },
@@ -36,7 +38,7 @@ export default function Checkout() {
         const formData = new FormData();
         formData.append('screenshot', screenshot);
 
-        const uploadRes = await fetch('/api/orders/screenshot', {
+        const uploadRes = await fetch(`${API_URL}/api/orders/screenshot`, {
           method: 'POST',
           body: formData,
         });
@@ -49,7 +51,7 @@ export default function Checkout() {
       }
 
       // 2. Submit final order
-      const response = await fetch('/api/orders', {
+      const response = await fetch(`${API_URL}/api/orders`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

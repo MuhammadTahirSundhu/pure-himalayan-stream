@@ -312,8 +312,35 @@ export default function AdminPanel({ onLogout }: { onLogout: () => void }) {
             <h1 className="font-heading font-bold text-2xl text-foreground mb-6">Lab Reports & Quality</h1>
             <div className="glass-card rounded-xl p-6 space-y-4 max-w-xl">
               <h3 className="font-semibold">Upload New Lab Report</h3>
-              <Input type="file" accept=".pdf" />
-              <Button className="water-gradient text-primary-foreground">Upload PDF</Button>
+              <Input type="file" accept=".pdf" id="labReportFile" />
+              <Button 
+                className="water-gradient text-primary-foreground"
+                onClick={async () => {
+                  const input = document.getElementById('labReportFile') as HTMLInputElement;
+                  if (!input || !input.files || input.files.length === 0) return alert('Please select a PDF file first.');
+                  const file = input.files[0];
+                  
+                  const formData = new FormData();
+                  formData.append('report', file);
+                  
+                  try {
+                    const res = await fetch('/api/admin/settings/quality', {
+                      method: 'POST',
+                      headers: { 'Authorization': `Bearer ${localStorage.getItem('ow_admin_token')}` },
+                      body: formData,
+                    });
+                    const data = await res.json();
+                    if (res.ok) {
+                      alert('Lab report uploaded successfully!');
+                      input.value = ''; // Reset
+                    } else {
+                      alert(`Error: ${data.message || 'Failed to upload'}`);
+                    }
+                  } catch (err) {
+                    alert('Network error. Please try again.');
+                  }
+                }}
+              >Upload PDF</Button>
             </div>
           </div>
         )}
@@ -437,9 +464,17 @@ function OrdersTable({ orders, onView, statusColors, isLoading }: {
 }
 
 function ProductsTab() {
-  const [products, setProducts] = useState<Array<{id:string;name:string;size:string;price:number;in_stock:boolean}>>([]);
+  const [products, setProducts] = useState<Array<{id:string;name:string;size:string;price:number;in_stock:boolean;category?:string}>>([]);
   const [editing, setEditing] = useState<string | null>(null);
   const [editPrice, setEditPrice] = useState('');
+  
+  // Add product state
+  const [newProductId, setNewProductId] = useState('');
+  const [newProductName, setNewProductName] = useState('');
+  const [newProductSize, setNewProductSize] = useState('');
+  const [newProductPrice, setNewProductPrice] = useState('');
+  const [newProductCat, setNewProductCat] = useState('bottle');
+
 
   useEffect(() => {
     fetch('/api/admin/products', { headers: { 'Authorization': `Bearer ${localStorage.getItem('ow_admin_token')}` } })
@@ -465,8 +500,61 @@ function ProductsTab() {
     setProducts(p => p.map(prod => prod.id === id ? { ...prod, in_stock: !current } : prod));
   };
 
+  const handleAddProduct = async () => {
+    if (!newProductId || !newProductName || !newProductSize || !newProductPrice) return alert('Fill all required fields');
+    try {
+      const res = await fetch('/api/admin/products', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('ow_admin_token')}` },
+        body: JSON.stringify({
+          id: newProductId, name: newProductName, size: newProductSize, 
+          price: Number(newProductPrice), category: newProductCat
+        })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setProducts([...products, data.product]);
+        setNewProductId(''); setNewProductName(''); setNewProductSize(''); setNewProductPrice('');
+      } else {
+        const d = await res.json();
+        alert(`Failed: ${d.message}`);
+      }
+    } catch { alert('Network error'); }
+  };
+
+  const handleDeleteProduct = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this product?')) return;
+    try {
+      const res = await fetch(`/api/admin/products/${id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('ow_admin_token')}` },
+      });
+      if (res.ok) {
+        setProducts(p => p.filter(prod => prod.id !== id));
+      } else {
+        alert('Failed to delete product.');
+      }
+    } catch { alert('Network error'); }
+  };
+
   return (
-    <div className="glass-card rounded-xl overflow-hidden">
+    <div className="space-y-6">
+      <div className="glass-card rounded-xl p-6 space-y-4 max-w-3xl">
+        <h3 className="font-semibold">Add New Product</h3>
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+          <Input placeholder="ID (e.g. 500ml_bottle)" value={newProductId} onChange={e => setNewProductId(e.target.value)} />
+          <Input placeholder="Name (e.g. 500ml Bottle)" value={newProductName} onChange={e => setNewProductName(e.target.value)} />
+          <Input placeholder="Size (e.g. 500ml)" value={newProductSize} onChange={e => setNewProductSize(e.target.value)} />
+          <Input type="number" placeholder="Price" value={newProductPrice} onChange={e => setNewProductPrice(e.target.value)} />
+          <Select value={newProductCat} onValueChange={setNewProductCat}>
+            <SelectTrigger><SelectValue/></SelectTrigger>
+            <SelectContent><SelectItem value="bottle">Bottle</SelectItem><SelectItem value="dispenser">Dispenser</SelectItem></SelectContent>
+          </Select>
+        </div>
+        <Button className="water-gradient text-primary-foreground" onClick={handleAddProduct}>Add Product</Button>
+      </div>
+
+      <div className="glass-card rounded-xl overflow-hidden">
       <Table>
         <TableHeader>
           <TableRow>
@@ -496,11 +584,15 @@ function ProductsTab() {
                 <Button variant="ghost" size="sm" onClick={() => toggleStock(p.id, p.in_stock)}>
                   {p.in_stock ? 'Mark Out' : 'Mark In'}
                 </Button>
+                <Button variant="destructive" size="sm" onClick={() => handleDeleteProduct(p.id)}>
+                  <X className="w-4 h-4" />
+                </Button>
               </TableCell>
             </TableRow>
           ))}
         </TableBody>
       </Table>
+    </div>
     </div>
   );
 }

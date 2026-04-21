@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
+
+const API_URL = import.meta.env.VITE_API_URL || '';
 import { Input } from '@/components/ui/input';
 import { Lock, Droplets, AlertCircle } from 'lucide-react';
 
@@ -23,7 +25,7 @@ export default function AdminLogin({ onLogin }: AdminLoginProps) {
     setError('');
 
     try {
-      const response = await fetch('/api/admin/login', {
+      const response = await fetch(`${API_URL}/api/admin/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, password }),

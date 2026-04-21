@@ -1,5 +1,7 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
 
+const API_URL = import.meta.env.VITE_API_URL || '';
+
 export interface CartItem {
   id: string;
   name: string;
@@ -72,7 +74,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
    */
   const applyPromo = useCallback(async (code: string): Promise<boolean> => {
     try {
-      const response = await fetch('/api/promo/validate', {
+      const response = await fetch(`${API_URL}/api/promo/validate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ code }),

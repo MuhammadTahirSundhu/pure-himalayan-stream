@@ -22,6 +22,7 @@ import productsRouter from './routes/products.js';
 import ordersRouter from './routes/orders.js';
 import contactRouter from './routes/contact.js';
 import promoRouter from './routes/promo.js';
+import eventsRouter from './routes/events.js';
 
 // Route imports — Admin
 import adminAuthRouter from './routes/admin/auth.js';
@@ -89,6 +90,7 @@ app.use('/api/products', productsRouter);
 app.use('/api/orders', ordersRouter);
 app.use('/api/contact', contactRouter);
 app.use('/api/promo', promoRouter);
+app.use('/api/events', eventsRouter);
 
 // ─────────────────────────────────────────────
 // Admin Auth Route (no auth middleware — this IS the login)

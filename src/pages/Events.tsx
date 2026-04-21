@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
+
+const API_URL = import.meta.env.VITE_API_URL || '';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -10,12 +12,55 @@ export default function Events() {
   const [eventType, setEventType] = useState('');
   const [quote, setQuote] = useState<{ bottles: number; price: number } | null>(null);
 
+  // Inquiry Form State
+  const [name, setName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [email, setEmail] = useState('');
+  const [date, setDate] = useState('');
+  const [location, setLocation] = useState('');
+  const [bottleSize, setBottleSize] = useState('');
+  const [quantity, setQuantity] = useState('');
+  const [notes, setNotes] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [statusMsg, setStatusMsg] = useState('');
+
   const calculateQuote = () => {
     const g = parseInt(guests) || 0;
     const bottlesPerPerson = eventType === 'wedding' ? 3 : eventType === 'corporate' ? 2 : 2;
     const bottles = g * bottlesPerPerson;
     const pricePerBottle = bottles >= 100 ? 40 : 50;
     setQuote({ bottles, price: bottles * pricePerBottle });
+  };
+
+  const handleSubmit = async () => {
+    if (!name || !phone) {
+      setStatusMsg('Name and Phone are required.');
+      return;
+    }
+    setLoading(true);
+    setStatusMsg('');
+    try {
+      const res = await fetch(`${API_URL}/api/events`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name, phone, email, event_date: date, event_location: location,
+          bottle_size: bottleSize, quantity, notes
+        })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setStatusMsg('✅ Inquiry submitted successfully! We will contact you soon.');
+        setName(''); setPhone(''); setEmail(''); setDate(''); setLocation('');
+        setBottleSize(''); setQuantity(''); setNotes('');
+      } else {
+        setStatusMsg(`❌ Error: ${data.message || 'Failed to submit'}`);
+      }
+    } catch (err) {
+      setStatusMsg('❌ Network error. Please try again later.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -110,12 +155,12 @@ export default function Events() {
               <MapPin className="w-5 h-5 text-primary inline mr-2" /> Event Inquiry Form
             </h2>
             <div className="glass-card rounded-2xl p-6 space-y-4">
-              <Input placeholder="Full Name" />
-              <Input placeholder="Phone Number" />
-              <Input placeholder="Email" />
-              <Input type="date" placeholder="Event Date" />
-              <Input placeholder="Event Location" />
-              <Select>
+              <Input placeholder="Full Name *" value={name} onChange={e => setName(e.target.value)} />
+              <Input placeholder="Phone Number *" value={phone} onChange={e => setPhone(e.target.value)} />
+              <Input placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} />
+              <Input type="date" placeholder="Event Date" value={date} onChange={e => setDate(e.target.value)} />
+              <Input placeholder="Event Location" value={location} onChange={e => setLocation(e.target.value)} />
+              <Select value={bottleSize} onValueChange={setBottleSize}>
                 <SelectTrigger>
                   <SelectValue placeholder="Bottle Size" />
                 </SelectTrigger>
@@ -126,10 +171,21 @@ export default function Events() {
                   <SelectItem value="1500ml">1.5L</SelectItem>
                 </SelectContent>
               </Select>
-              <Input type="number" placeholder="Estimated Quantity" />
-              <Textarea placeholder="Additional Notes (custom labels, delivery timing, etc.)" />
-              <Button className="w-full water-gradient text-primary-foreground font-semibold">
-                Submit Inquiry
+              <Input type="number" placeholder="Estimated Quantity" value={quantity} onChange={e => setQuantity(e.target.value)} />
+              <Textarea placeholder="Additional Notes (custom labels, delivery timing, etc.)" value={notes} onChange={e => setNotes(e.target.value)} />
+              
+              {statusMsg && (
+                <p className={`text-sm ${statusMsg.startsWith('✅') ? 'text-green-600' : 'text-red-600'}`}>
+                  {statusMsg}
+                </p>
+              )}
+
+              <Button 
+                className="w-full water-gradient text-primary-foreground font-semibold" 
+                onClick={handleSubmit}
+                disabled={loading}
+              >
+                {loading ? 'Submitting...' : 'Submit Inquiry'}
               </Button>
             </div>
           </div>

@@ -1,6 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
 import { Product } from '@/data/products';
 
+const API_URL = import.meta.env.VITE_API_URL || '';
+
 // Temporary mapping for local image resolution
 import bottle300 from '@/assets/brand/bottle-300ml.png';
 import bottle500 from '@/assets/brand/bottle-500ml.png';
@@ -20,7 +22,7 @@ export function useProducts() {
   return useQuery({
     queryKey: ['products'],
     queryFn: async () => {
-      const response = await fetch('/api/products');
+      const response = await fetch(`${API_URL}/api/products`);
       if (!response.ok) throw new Error('Failed to fetch products');
       const data: Product[] = await response.json();
       
