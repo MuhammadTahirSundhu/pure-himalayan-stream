@@ -47,6 +47,7 @@ app.use(helmet());
 // CORS — tightly scoped to the frontend origin
 const allowedOrigins = [
   'http://localhost:8080',
+  'https://www.onewaterpakistan.com',
   'http://localhost:5173',
   process.env.FRONTEND_URL, // Set in .env to your Vercel domain
 ].filter(Boolean);
