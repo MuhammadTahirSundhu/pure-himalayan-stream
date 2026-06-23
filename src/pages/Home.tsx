@@ -81,7 +81,21 @@ export default function Home() {
               className="max-w-6xl mx-auto"
             >
               <CarouselContent className="-ml-4">
-                {isLoading && <div className="p-8 text-center w-full">Loading premium products...</div>}
+                {isLoading && Array.from({ length: 4 }).map((_, i) => (
+                  <CarouselItem key={i} className="pl-4 sm:basis-1/2 lg:basis-1/3 xl:basis-1/4">
+                    <div className="glass-card rounded-2xl overflow-hidden animate-pulse">
+                      <div className="aspect-square bg-muted/60" />
+                      <div className="p-5 space-y-3">
+                        <div className="h-4 bg-muted rounded w-2/3" />
+                        <div className="h-3 bg-muted rounded w-full" />
+                        <div className="flex justify-between pt-1">
+                          <div className="h-5 bg-muted rounded w-16" />
+                          <div className="h-8 bg-muted rounded-md w-24" />
+                        </div>
+                      </div>
+                    </div>
+                  </CarouselItem>
+                ))}
                 {products?.map(p => (
                   <CarouselItem key={p.id} className="pl-4 sm:basis-1/2 lg:basis-1/3 xl:basis-1/4">
                     <ProductCard product={p} />

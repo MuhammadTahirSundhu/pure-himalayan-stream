@@ -258,7 +258,7 @@ export default function Checkout() {
             </div>
             <div className="flex flex-col gap-3">
               <a
-                href={`https://wa.me/923001234567?text=Hi! I just placed order ${orderRef}. Please confirm.`}
+                href={`https://wa.me/923203133140?text=Hi! I just placed order ${orderRef}. Please confirm.`}
                 target="_blank"
                 rel="noopener noreferrer"
               >
