@@ -405,7 +405,7 @@ export default function AdminPanel({ onLogout }: { onLogout: () => void }) {
           </div>
         )}
 
-      </main>
+      </div>
 
       {/* ── Order Detail Modal ───────────────────── */}
       <Dialog open={!!selectedOrder} onOpenChange={() => setSelectedOrder(null)}>
