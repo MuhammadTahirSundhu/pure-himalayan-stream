@@ -196,6 +196,19 @@ export const initDB = async () => {
       );
     `);
 
+    // ── Clients (Featured on Homepage) ───────────────────────────────────
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS public.clients (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        name text NOT NULL,
+        logo_url text,
+        website_url text,
+        sort_order integer DEFAULT 0,
+        is_active boolean DEFAULT true,
+        created_at timestamptz DEFAULT now()
+      );
+    `);
+
     await client.query('COMMIT');
     console.log('✅ Database initialized successfully.\n');
 

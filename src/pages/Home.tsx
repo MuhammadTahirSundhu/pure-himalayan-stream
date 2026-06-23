@@ -8,6 +8,7 @@ import { useProducts } from '@/hooks/useProducts';
 import ProductCard from '@/components/ProductCard';
 import Reveal from '@/components/Reveal';
 import TrustBadgesStrip from '@/components/TrustBadgesStrip';
+import ClientsMarquee from '@/components/ClientsMarquee';
 import heroBg from '@/assets/brand/hero-bg.jpg';
 
 export default function Home() {
@@ -108,6 +109,9 @@ export default function Home() {
           </Reveal>
         </div>
       </section>
+
+      {/* Featured Clients Marquee */}
+      <ClientsMarquee />
 
       {/* Promo Banner */}
       <Reveal as="section" className="py-16 water-gradient relative overflow-hidden">

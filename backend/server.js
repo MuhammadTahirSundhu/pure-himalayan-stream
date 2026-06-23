@@ -23,6 +23,7 @@ import ordersRouter from './routes/orders.js';
 import contactRouter from './routes/contact.js';
 import promoRouter from './routes/promo.js';
 import eventsRouter from './routes/events.js';
+import clientsRouter from './routes/clients.js';
 
 // Route imports — Admin
 import adminAuthRouter from './routes/admin/auth.js';
@@ -32,6 +33,7 @@ import adminProductsRouter from './routes/admin/products.js';
 import adminMessagesRouter from './routes/admin/messages.js';
 import adminPromoCodesRouter from './routes/admin/promoCodes.js';
 import adminSettingsRouter from './routes/admin/settings.js';
+import adminClientsRouter from './routes/admin/clients.js';
 
 dotenv.config();
 
@@ -92,6 +94,7 @@ app.use('/api/orders', ordersRouter);
 app.use('/api/contact', contactRouter);
 app.use('/api/promo', promoRouter);
 app.use('/api/events', eventsRouter);
+app.use('/api/clients', clientsRouter);
 
 // ─────────────────────────────────────────────
 // Admin Auth Route (no auth middleware — this IS the login)
@@ -107,6 +110,7 @@ app.use('/api/admin/products', authMiddleware, adminProductsRouter);
 app.use('/api/admin/messages', authMiddleware, adminMessagesRouter);
 app.use('/api/admin/promo-codes', authMiddleware, adminPromoCodesRouter);
 app.use('/api/admin/settings', authMiddleware, adminSettingsRouter);
+app.use('/api/admin/clients', authMiddleware, adminClientsRouter);
 
 // ─────────────────────────────────────────────
 // Global Error Handler

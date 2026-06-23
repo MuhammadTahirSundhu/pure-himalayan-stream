@@ -5,7 +5,7 @@ import { Textarea } from '@/components/ui/textarea';
 import {
   LayoutDashboard, ShoppingCart, Package, Megaphone,
   FlaskConical, Settings, LogOut, Eye, Check, X, Truck, Clock,
-  MessageSquare, Tag, RefreshCw
+  MessageSquare, Tag, RefreshCw, Building2, Plus, Trash2, ToggleLeft, ToggleRight
 } from 'lucide-react';
 import { Table, TableHeader, TableHead, TableBody, TableRow, TableCell } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -50,6 +50,7 @@ const sidebarItems = [
   { id: 'products',   label: 'Products',   icon: Package         },
   { id: 'messages',   label: 'Messages',   icon: MessageSquare   },
   { id: 'offers',     label: 'Promo Codes',icon: Tag             },
+  { id: 'clients',    label: 'Clients',    icon: Building2       },
   { id: 'quality',    label: 'Lab Reports',icon: FlaskConical    },
   { id: 'settings',   label: 'Settings',   icon: Settings        },
 ];
@@ -252,6 +253,14 @@ export default function AdminPanel({ onLogout }: { onLogout: () => void }) {
           <div>
             <h1 className="font-heading font-bold text-2xl text-foreground mb-6">Contact Messages</h1>
             <MessagesTab />
+          </div>
+        )}
+
+        {/* ── Clients ────────────────────── */}
+        {tab === 'clients' && (
+          <div>
+            <h1 className="font-heading font-bold text-2xl text-foreground mb-6">Featured Clients</h1>
+            <ClientsTab />
           </div>
         )}
 
@@ -621,3 +630,143 @@ function MessagesTab() {
     </div>
   );
 }
+
+// ─── ClientsTab ───────────────────────────────────────────────────────────────
+
+interface Client {
+  id: string;
+  name: string;
+  logo_url: string | null;
+  website_url: string | null;
+  is_active: boolean;
+  sort_order: number;
+}
+
+function ClientsTab() {
+  const [clients, setClients] = useState<Client[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [name, setName] = useState('');
+  const [logoUrl, setLogoUrl] = useState('');
+  const [websiteUrl, setWebsiteUrl] = useState('');
+  const [sortOrder, setSortOrder] = useState('0');
+  const [isAdding, setIsAdding] = useState(false);
+  const authH = () => ({ 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('ow_admin_token')}` });
+
+  const fetchClients = async () => {
+    setIsLoading(true);
+    try {
+      const res = await fetch('/api/admin/clients', { headers: authH() });
+      if (res.ok) setClients(await res.json());
+    } catch (err) { console.error(err); }
+    finally { setIsLoading(false); }
+  };
+
+  useEffect(() => { fetchClients(); }, []);
+
+  const handleAdd = async () => {
+    if (!name.trim()) return alert('Client name is required.');
+    setIsAdding(true);
+    try {
+      const res = await fetch('/api/admin/clients', {
+        method: 'POST',
+        headers: authH(),
+        body: JSON.stringify({ name: name.trim(), logo_url: logoUrl || null, website_url: websiteUrl || null, sort_order: Number(sortOrder) || 0 }),
+      });
+      if (res.ok) {
+        setName(''); setLogoUrl(''); setWebsiteUrl(''); setSortOrder('0');
+        fetchClients();
+      } else {
+        const d = await res.json();
+        alert(d.message || 'Failed to add client.');
+      }
+    } catch { alert('Network error.'); }
+    finally { setIsAdding(false); }
+  };
+
+  const handleToggle = async (id: string) => {
+    try {
+      const res = await fetch(`/api/admin/clients/${id}/toggle`, { method: 'PATCH', headers: authH() });
+      if (res.ok) setClients(c => c.map(cl => cl.id === id ? { ...cl, is_active: !cl.is_active } : cl));
+    } catch { alert('Network error.'); }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Delete this client?')) return;
+    try {
+      const res = await fetch(`/api/admin/clients/${id}`, { method: 'DELETE', headers: authH() });
+      if (res.ok) setClients(c => c.filter(cl => cl.id !== id));
+    } catch { alert('Network error.'); }
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Add form */}
+      <div className="glass-card rounded-xl p-6 space-y-4 max-w-2xl">
+        <h3 className="font-semibold flex items-center gap-2"><Plus className="w-4 h-4 text-primary" /> Add New Client</h3>
+        <div className="grid sm:grid-cols-2 gap-3">
+          <Input placeholder="Client / Company Name *" value={name} onChange={e => setName(e.target.value)} />
+          <Input placeholder="Logo URL (https://...)" value={logoUrl} onChange={e => setLogoUrl(e.target.value)} />
+          <Input placeholder="Website URL (optional)" value={websiteUrl} onChange={e => setWebsiteUrl(e.target.value)} />
+          <Input type="number" placeholder="Sort Order (0 = first)" value={sortOrder} onChange={e => setSortOrder(e.target.value)} min="0" />
+        </div>
+        <p className="text-xs text-muted-foreground">Tip: If no logo URL is provided, initials will be shown with a unique colour.</p>
+        <Button className="water-gradient text-primary-foreground" onClick={handleAdd} disabled={isAdding}>
+          {isAdding ? 'Adding...' : 'Add Client'}
+        </Button>
+      </div>
+
+      {/* Clients list */}
+      <div className="glass-card rounded-xl overflow-hidden">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Client</TableHead>
+              <TableHead>Logo</TableHead>
+              <TableHead>Website</TableHead>
+              <TableHead>Order</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {isLoading && (
+              <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">Loading clients...</TableCell></TableRow>
+            )}
+            {!isLoading && clients.length === 0 && (
+              <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">No clients yet. Add your first client above.</TableCell></TableRow>
+            )}
+            {clients.map(cl => (
+              <TableRow key={cl.id}>
+                <TableCell className="font-semibold">{cl.name}</TableCell>
+                <TableCell>
+                  {cl.logo_url
+                    ? <img src={cl.logo_url} alt={cl.name} className="h-8 w-auto max-w-[80px] object-contain rounded" onError={e => (e.currentTarget.style.display = 'none')} />
+                    : <span className="text-xs text-muted-foreground italic">No logo</span>
+                  }
+                </TableCell>
+                <TableCell className="text-xs text-primary truncate max-w-[140px]">
+                  {cl.website_url ? <a href={cl.website_url} target="_blank" rel="noopener noreferrer" className="hover:underline">{cl.website_url}</a> : '—'}
+                </TableCell>
+                <TableCell>{cl.sort_order}</TableCell>
+                <TableCell>
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${cl.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-500'}`}>
+                    {cl.is_active ? 'Visible' : 'Hidden'}
+                  </span>
+                </TableCell>
+                <TableCell className="flex gap-2">
+                  <Button variant="outline" size="sm" onClick={() => handleToggle(cl.id)} title={cl.is_active ? 'Hide' : 'Show'}>
+                    {cl.is_active ? <ToggleRight className="w-4 h-4 text-accent" /> : <ToggleLeft className="w-4 h-4 text-muted-foreground" />}
+                  </Button>
+                  <Button variant="destructive" size="sm" onClick={() => handleDelete(cl.id)}>
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+    </div>
+  );
+}
+
