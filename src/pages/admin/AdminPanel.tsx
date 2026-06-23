@@ -451,7 +451,6 @@ export default function AdminPanel({ onLogout }: { onLogout: () => void }) {
           )}
         </DialogContent>
       </Dialog>
-        </div>
       </main>
     </div>
   );
