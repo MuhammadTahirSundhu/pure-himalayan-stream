@@ -5,7 +5,7 @@ import { Textarea } from '@/components/ui/textarea';
 import {
   LayoutDashboard, ShoppingCart, Package, Megaphone,
   FlaskConical, Settings, LogOut, Eye, Check, X, Truck, Clock,
-  MessageSquare, Tag, RefreshCw, Building2, Plus, Trash2, ToggleLeft, ToggleRight
+  MessageSquare, Tag, RefreshCw, Building2, Plus, Trash2, ToggleLeft, ToggleRight, Menu
 } from 'lucide-react';
 import { Table, TableHeader, TableHead, TableBody, TableRow, TableCell } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -59,6 +59,7 @@ const sidebarItems = [
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function AdminPanel({ onLogout }: { onLogout: () => void }) {
+  const [isSidebarOpen, setIsSidebarOpen]   = useState(false);
   const [tab, setTab]                       = useState('dashboard');
   const [orders, setOrders]                 = useState<Order[]>([]);
   const [stats, setStats]                   = useState<Stats | null>(null);
@@ -169,18 +170,31 @@ export default function AdminPanel({ onLogout }: { onLogout: () => void }) {
   // ─── Render ────────────────────────────────────────────────────────────────
 
   return (
-    <div className="flex min-h-screen bg-background">
+    <div className="flex h-screen bg-background relative overflow-hidden">
+      {/* Mobile Overlay */}
+      {isSidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-black/60 z-40 md:hidden backdrop-blur-sm transition-opacity" 
+          onClick={() => setIsSidebarOpen(false)} 
+        />
+      )}
+
       {/* Sidebar */}
-      <aside className="w-64 bg-foreground text-primary-foreground/80 flex flex-col shrink-0">
-        <div className="p-4 border-b border-primary-foreground/10">
-          <h2 className="font-heading font-bold text-lg text-primary-foreground">OneWater Admin</h2>
-          <p className="text-xs text-primary-foreground/40 mt-0.5">Welcome, {adminUsername}</p>
+      <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-foreground text-primary-foreground/80 flex flex-col shrink-0 transform transition-transform duration-300 md:relative md:translate-x-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+        <div className="p-4 border-b border-primary-foreground/10 flex items-center justify-between shrink-0">
+          <div>
+            <h2 className="font-heading font-bold text-lg text-primary-foreground">OneWater Admin</h2>
+            <p className="text-xs text-primary-foreground/40 mt-0.5">Welcome, {adminUsername}</p>
+          </div>
+          <button className="md:hidden text-primary-foreground/60 p-1 hover:text-primary-foreground transition-colors" onClick={() => setIsSidebarOpen(false)}>
+            <X className="w-5 h-5" />
+          </button>
         </div>
-        <nav className="flex-1 p-2">
+        <nav className="flex-1 p-2 overflow-y-auto">
           {sidebarItems.map(item => (
             <button
               key={item.id}
-              onClick={() => setTab(item.id)}
+              onClick={() => { setTab(item.id); setIsSidebarOpen(false); }}
               className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors mb-1 ${
                 tab === item.id ? 'bg-primary/20 text-primary-foreground' : 'hover:bg-primary-foreground/5'
               }`}
@@ -190,7 +204,7 @@ export default function AdminPanel({ onLogout }: { onLogout: () => void }) {
             </button>
           ))}
         </nav>
-        <div className="p-4 border-t border-primary-foreground/10">
+        <div className="p-4 border-t border-primary-foreground/10 shrink-0">
           <Button variant="ghost" className="w-full text-primary-foreground/60 hover:text-primary-foreground" onClick={onLogout}>
             <LogOut className="w-4 h-4 mr-2" /> Logout
           </Button>
@@ -198,7 +212,17 @@ export default function AdminPanel({ onLogout }: { onLogout: () => void }) {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 p-6 overflow-auto">
+      <main className="flex-1 flex flex-col min-w-0 h-screen">
+        {/* Mobile Header */}
+        <div className="md:hidden flex items-center p-4 border-b border-border/50 shrink-0 bg-card z-10">
+          <button onClick={() => setIsSidebarOpen(true)} className="p-2 -ml-2 mr-2 text-foreground hover:bg-muted rounded-lg transition-colors">
+            <Menu className="w-6 h-6" />
+          </button>
+          <h1 className="font-heading font-bold text-lg text-foreground">Admin Panel</h1>
+        </div>
+
+        {/* Content Area */}
+        <div className="flex-1 p-4 md:p-6 overflow-x-hidden overflow-y-auto w-full">
 
         {/* ── Dashboard ─────────────────────────── */}
         {tab === 'dashboard' && (
@@ -427,6 +451,8 @@ export default function AdminPanel({ onLogout }: { onLogout: () => void }) {
           )}
         </DialogContent>
       </Dialog>
+        </div>
+      </main>
     </div>
   );
 }
@@ -438,7 +464,7 @@ function OrdersTable({ orders, onView, statusColors, isLoading }: {
   statusColors: Record<string, string>; isLoading: boolean;
 }) {
   return (
-    <div className="glass-card rounded-xl overflow-hidden">
+    <div className="glass-card rounded-xl overflow-x-auto">
       <Table>
         <TableHeader>
           <TableRow>
@@ -632,7 +658,7 @@ function ProductsTab() {
       </div>
 
 
-      <div className="glass-card rounded-xl overflow-hidden">
+      <div className="glass-card rounded-xl overflow-x-auto">
       <Table>
         <TableHeader>
           <TableRow>
@@ -866,7 +892,7 @@ function ClientsTab() {
 
 
       {/* Clients list */}
-      <div className="glass-card rounded-xl overflow-hidden">
+      <div className="glass-card rounded-xl overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
@@ -1052,7 +1078,7 @@ function OffersTab() {
         </Button>
       </div>
 
-      <div className="glass-card rounded-xl overflow-hidden">
+      <div className="glass-card rounded-xl overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
