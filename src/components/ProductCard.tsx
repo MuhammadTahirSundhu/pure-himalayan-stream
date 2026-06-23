@@ -9,6 +9,7 @@ interface ProductCardProps {
 export default function ProductCard({ product }: ProductCardProps) {
   const { addItem } = useCart();
 
+  return (
     <div
       className="group rounded-2xl flex flex-col overflow-hidden transition-all duration-400"
       style={{
@@ -87,4 +88,5 @@ export default function ProductCard({ product }: ProductCardProps) {
         </div>
       </div>
     </div>
+  );
 }

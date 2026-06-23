@@ -27,8 +27,9 @@ export function useProducts() {
       const data: Product[] = await response.json();
       
       // Map string image_url to actual local Vite image reference
-      return data.map(p => ({
+      return data.map((p: any) => ({
         ...p,
+        inStock: p.in_stock,
         image: imageMap[p.image_url as unknown as string] || p.image_url
       }));
     }

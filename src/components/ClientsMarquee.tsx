@@ -149,8 +149,9 @@ export default function ClientsMarquee() {
     };
   }, [isLoading, clients]);
 
-  // Duplicate clients so the marquee loops seamlessly
-  const displayClients = [...clients, ...clients];
+  // Duplicate clients multiple times so the marquee loops seamlessly even on ultrawide monitors
+  // We use 50 copies (25 for the first half, 25 for the second half)
+  const displayClients = Array(50).fill(clients).flat();
 
   return (
     <section className="py-16 relative overflow-hidden" style={{ background: 'linear-gradient(180deg, #030D1A 0%, #041422 50%, #030D1A 100%)' }}>
