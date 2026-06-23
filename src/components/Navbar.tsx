@@ -1,6 +1,7 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useState } from 'react';
-import { ShoppingCart, Menu, X, Droplets } from 'lucide-react';
+import { ShoppingCart, Menu, X } from 'lucide-react';
+import logoIcon from '@/assets/media/2.jpeg';
 import { Button } from '@/components/ui/button';
 import { useCart } from '@/contexts/CartContext';
 import ThemeToggle from '@/components/ThemeToggle';
@@ -25,8 +26,8 @@ export default function Navbar() {
     <nav className="sticky top-0 z-50 glass-card border-b border-border/50">
       <div className="container mx-auto px-4 flex items-center justify-between h-16">
         <Link to="/" className="flex items-center gap-2 group">
-          <div className="w-9 h-9 rounded-full water-gradient flex items-center justify-center">
-            <Droplets className="w-5 h-5 text-primary-foreground" />
+          <div className="w-9 h-9 rounded-full overflow-hidden flex items-center justify-center">
+            <img src={logoIcon} alt="OneWater Logo" className="w-full h-full object-cover" />
           </div>
           <span className="font-heading font-bold text-xl text-foreground">
             One<span className="text-primary">Water</span>
