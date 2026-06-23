@@ -1,6 +1,24 @@
 // routes/admin/clients.js — Protected admin endpoints for managing clients
 import express from 'express';
+import multer from 'multer';
+import { v2 as cloudinary } from 'cloudinary';
 import pool from '../../db.js';
+
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key:    process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
+// Memory storage — file stays in RAM, streamed directly to Cloudinary
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 3 * 1024 * 1024 }, // 3 MB max
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith('image/')) cb(null, true);
+    else cb(new Error('Only image files are allowed'));
+  },
+});
 
 const router = express.Router();
 
@@ -17,17 +35,48 @@ router.get('/', async (req, res) => {
   }
 });
 
-// POST /api/admin/clients — add a new client
-router.post('/', async (req, res) => {
-  const { name, logo_url, website_url, sort_order } = req.body;
-  if (!name || !name.trim()) {
+// POST /api/admin/clients — add a new client (multipart/form-data)
+// Fields: name (text), website_url (text), sort_order (text), logo (file — optional)
+router.post('/', upload.single('logo'), async (req, res) => {
+  const { name, website_url, sort_order } = req.body;
+
+  if (!name || !String(name).trim()) {
     return res.status(400).json({ error: 'ValidationError', message: 'Client name is required.' });
   }
+
+  let logo_url = null;
+
+  // Upload logo to Cloudinary if a file was provided
+  if (req.file) {
+    try {
+      const uploaded = await new Promise((resolve, reject) => {
+        const stream = cloudinary.uploader.upload_stream(
+          {
+            folder: 'onewater/clients',
+            resource_type: 'image',
+            allowed_formats: ['jpg', 'jpeg', 'png', 'webp', 'svg', 'gif'],
+            transformation: [{ width: 400, height: 400, crop: 'limit', quality: 'auto' }],
+          },
+          (error, result) => {
+            if (error) reject(error);
+            else resolve(result);
+          }
+        );
+        stream.end(req.file.buffer);
+      });
+      logo_url = uploaded.secure_url;
+      console.log(`[admin/clients] Logo uploaded to Cloudinary: ${logo_url}`);
+    } catch (err) {
+      console.error('[admin/clients] Cloudinary upload error:', err.message);
+      return res.status(500).json({ error: 'UploadError', message: 'Failed to upload logo to Cloudinary.' });
+    }
+  }
+
   try {
     const result = await pool.query(
       `INSERT INTO public.clients (name, logo_url, website_url, sort_order)
        VALUES ($1, $2, $3, $4) RETURNING *`,
-      [name.trim(), logo_url || null, website_url || null, sort_order ?? 0]
+      [String(name).trim(), logo_url, website_url || null, Number(sort_order) || 0]
     );
     res.status(201).json({ client: result.rows[0] });
   } catch (err) {
@@ -66,3 +115,4 @@ router.delete('/:id', async (req, res) => {
 });
 
 export default router;
+

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -646,16 +646,20 @@ function ClientsTab() {
   const [clients, setClients] = useState<Client[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [name, setName] = useState('');
-  const [logoUrl, setLogoUrl] = useState('');
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [websiteUrl, setWebsiteUrl] = useState('');
   const [sortOrder, setSortOrder] = useState('0');
   const [isAdding, setIsAdding] = useState(false);
-  const authH = () => ({ 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('ow_admin_token')}` });
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const authToken = () => localStorage.getItem('ow_admin_token') || '';
 
   const fetchClients = async () => {
     setIsLoading(true);
     try {
-      const res = await fetch('/api/admin/clients', { headers: authH() });
+      const res = await fetch('/api/admin/clients', {
+        headers: { 'Authorization': `Bearer ${authToken()}` },
+      });
       if (res.ok) setClients(await res.json());
     } catch (err) { console.error(err); }
     finally { setIsLoading(false); }
@@ -663,17 +667,42 @@ function ClientsTab() {
 
   useEffect(() => { fetchClients(); }, []);
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] || null;
+    setLogoFile(file);
+    if (file) {
+      const url = URL.createObjectURL(file);
+      setPreviewUrl(url);
+    } else {
+      setPreviewUrl(null);
+    }
+  };
+
+  const clearFile = () => {
+    setLogoFile(null);
+    setPreviewUrl(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
   const handleAdd = async () => {
     if (!name.trim()) return alert('Client name is required.');
     setIsAdding(true);
     try {
+      // Use FormData so we can send both text fields + the logo file
+      const formData = new FormData();
+      formData.append('name', name.trim());
+      formData.append('website_url', websiteUrl);
+      formData.append('sort_order', sortOrder);
+      if (logoFile) formData.append('logo', logoFile);
+
       const res = await fetch('/api/admin/clients', {
         method: 'POST',
-        headers: authH(),
-        body: JSON.stringify({ name: name.trim(), logo_url: logoUrl || null, website_url: websiteUrl || null, sort_order: Number(sortOrder) || 0 }),
+        headers: { 'Authorization': `Bearer ${authToken()}` }, // NO Content-Type — let browser set multipart boundary
+        body: formData,
       });
+
       if (res.ok) {
-        setName(''); setLogoUrl(''); setWebsiteUrl(''); setSortOrder('0');
+        setName(''); clearFile(); setWebsiteUrl(''); setSortOrder('0');
         fetchClients();
       } else {
         const d = await res.json();
@@ -685,7 +714,10 @@ function ClientsTab() {
 
   const handleToggle = async (id: string) => {
     try {
-      const res = await fetch(`/api/admin/clients/${id}/toggle`, { method: 'PATCH', headers: authH() });
+      const res = await fetch(`/api/admin/clients/${id}/toggle`, {
+        method: 'PATCH',
+        headers: { 'Authorization': `Bearer ${authToken()}` },
+      });
       if (res.ok) setClients(c => c.map(cl => cl.id === id ? { ...cl, is_active: !cl.is_active } : cl));
     } catch { alert('Network error.'); }
   };
@@ -693,7 +725,10 @@ function ClientsTab() {
   const handleDelete = async (id: string) => {
     if (!confirm('Delete this client?')) return;
     try {
-      const res = await fetch(`/api/admin/clients/${id}`, { method: 'DELETE', headers: authH() });
+      const res = await fetch(`/api/admin/clients/${id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${authToken()}` },
+      });
       if (res.ok) setClients(c => c.filter(cl => cl.id !== id));
     } catch { alert('Network error.'); }
   };
@@ -703,17 +738,63 @@ function ClientsTab() {
       {/* Add form */}
       <div className="glass-card rounded-xl p-6 space-y-4 max-w-2xl">
         <h3 className="font-semibold flex items-center gap-2"><Plus className="w-4 h-4 text-primary" /> Add New Client</h3>
+
         <div className="grid sm:grid-cols-2 gap-3">
           <Input placeholder="Client / Company Name *" value={name} onChange={e => setName(e.target.value)} />
-          <Input placeholder="Logo URL (https://...)" value={logoUrl} onChange={e => setLogoUrl(e.target.value)} />
           <Input placeholder="Website URL (optional)" value={websiteUrl} onChange={e => setWebsiteUrl(e.target.value)} />
           <Input type="number" placeholder="Sort Order (0 = first)" value={sortOrder} onChange={e => setSortOrder(e.target.value)} min="0" />
         </div>
-        <p className="text-xs text-muted-foreground">Tip: If no logo URL is provided, initials will be shown with a unique colour.</p>
+
+        {/* Logo file picker */}
+        <div>
+          <p className="text-sm font-medium text-foreground mb-2">Client Logo <span className="text-muted-foreground font-normal">(optional — PNG, JPG, SVG, WebP · max 3 MB)</span></p>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            id="client-logo-upload"
+            onChange={handleFileChange}
+          />
+
+          {previewUrl ? (
+            /* Preview card */
+            <div className="flex items-center gap-4 p-4 rounded-xl border border-border bg-muted/30">
+              <img src={previewUrl} alt="Preview" className="h-16 w-16 object-contain rounded-lg border border-border bg-white p-1" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-foreground truncate">{logoFile?.name}</p>
+                <p className="text-xs text-muted-foreground">{logoFile ? `${(logoFile.size / 1024).toFixed(0)} KB` : ''} · Will upload to Cloudinary</p>
+              </div>
+              <Button variant="ghost" size="sm" onClick={clearFile} className="shrink-0 text-destructive hover:text-destructive">
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
+          ) : (
+            /* Drop zone */
+            <label
+              htmlFor="client-logo-upload"
+              className="flex flex-col items-center justify-center gap-2 p-6 rounded-xl border-2 border-dashed border-border hover:border-primary/50 hover:bg-primary/5 transition-colors cursor-pointer"
+            >
+              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                <Building2 className="w-5 h-5 text-primary" />
+              </div>
+              <p className="text-sm font-medium text-foreground">Click to upload logo</p>
+              <p className="text-xs text-muted-foreground">PNG, JPG, SVG, WebP (max 3 MB)</p>
+            </label>
+          )}
+          <p className="text-xs text-muted-foreground mt-2">If no logo is uploaded, initials will be shown with a unique colour on the homepage.</p>
+        </div>
+
         <Button className="water-gradient text-primary-foreground" onClick={handleAdd} disabled={isAdding}>
-          {isAdding ? 'Adding...' : 'Add Client'}
+          {isAdding ? (
+            <span className="flex items-center gap-2">
+              <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>
+              Uploading to Cloudinary...
+            </span>
+          ) : 'Add Client'}
         </Button>
       </div>
+
 
       {/* Clients list */}
       <div className="glass-card rounded-xl overflow-hidden">
