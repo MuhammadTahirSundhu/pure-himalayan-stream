@@ -3,8 +3,26 @@
 
 import { Router } from 'express';
 import { body, param } from 'express-validator';
+import multer from 'multer';
+import { v2 as cloudinary } from 'cloudinary';
 import { validate } from '../../middleware/validate.js';
 import pool from '../../db.js';
+
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key:    process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
+// Memory storage — stream directly to Cloudinary, nothing saved to disk
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB max
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith('image/')) cb(null, true);
+    else cb(new Error('Only image files are allowed'));
+  },
+});
 
 const router = Router();
 
@@ -24,40 +42,66 @@ router.get('/', async (req, res) => {
 
 /**
  * POST /api/admin/products
- * Creates a new product.
- * Body: { id, name, size, price, description?, image_url?, category }
+ * Creates a new product. Accepts multipart/form-data.
+ * Fields: id, name, size, price, category (text) + image (file, optional)
  */
-router.post(
-  '/',
-  [
-    body('id').notEmpty().trim().withMessage('Product ID is required'),
-    body('name').notEmpty().trim().withMessage('Product name is required'),
-    body('size').notEmpty().trim().withMessage('Size is required'),
-    body('price').isNumeric().withMessage('Price must be a number'),
-    body('category').isIn(['bottle', 'dispenser']).withMessage('Category must be bottle or dispenser'),
-    body('description').optional().trim(),
-    body('image_url').optional().trim(),
-  ],
-  validate,
-  async (req, res) => {
-    const { id, name, size, price, description, image_url, category } = req.body;
+router.post('/', upload.single('image'), async (req, res) => {
+  const { id, name, size, price, description, category } = req.body;
+
+  // Basic validation
+  if (!id || !name || !size || !price || !category) {
+    return res.status(400).json({ error: 'ValidationError', message: 'id, name, size, price and category are required.' });
+  }
+  if (!['bottle', 'dispenser'].includes(category)) {
+    return res.status(400).json({ error: 'ValidationError', message: 'Category must be bottle or dispenser.' });
+  }
+
+  let image_url = null;
+
+  // Upload to Cloudinary if an image was provided
+  if (req.file) {
     try {
-      const result = await pool.query(
-        `INSERT INTO public.products (id, name, size, price, description, image_url, category, in_stock)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, true) RETURNING *`,
-        [id, name, size, price, description || null, image_url || null, category]
-      );
-      console.log(`[admin/products] Created product: ${id} — ${name}`);
-      res.status(201).json({ success: true, product: result.rows[0] });
+      const uploaded = await new Promise((resolve, reject) => {
+        const stream = cloudinary.uploader.upload_stream(
+          {
+            folder: 'onewater/products',
+            resource_type: 'image',
+            allowed_formats: ['jpg', 'jpeg', 'png', 'webp', 'svg'],
+            transformation: [{ width: 800, height: 800, crop: 'limit', quality: 'auto:good' }],
+          },
+          (error, result) => {
+            if (error) reject(error);
+            else resolve(result);
+          }
+        );
+        stream.end(req.file.buffer);
+      });
+      image_url = uploaded.secure_url;
+      console.log(`[admin/products] Image uploaded to Cloudinary: ${image_url}`);
     } catch (err) {
-      console.error('[admin/products] POST error:', err.message);
-      if (err.code === '23505') {
-        return res.status(409).json({ error: 'Duplicate', message: 'A product with this ID already exists.' });
-      }
-      res.status(500).json({ error: 'ServerError', message: 'Failed to create product.' });
+      console.error('[admin/products] Cloudinary upload error:', err.message);
+      return res.status(500).json({ error: 'UploadError', message: 'Failed to upload product image.' });
     }
   }
-);
+
+  try {
+    const result = await pool.query(
+      `INSERT INTO public.products (id, name, size, price, description, image_url, category, in_stock)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, true) RETURNING *`,
+      [id.trim(), name.trim(), size.trim(), parseFloat(price), description || null, image_url, category]
+    );
+    console.log(`[admin/products] Created product: ${id} — ${name}`);
+    res.status(201).json({ success: true, product: result.rows[0] });
+  } catch (err) {
+    console.error('[admin/products] POST error:', err.message);
+    if (err.code === '23505') {
+      return res.status(409).json({ error: 'Duplicate', message: 'A product with this ID already exists.' });
+    }
+    res.status(500).json({ error: 'ServerError', message: 'Failed to create product.' });
+  }
+});
+
+
 
 /**
  * PUT /api/admin/products/:id

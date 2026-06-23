@@ -214,4 +214,29 @@
     opacity: 1;
     transition: opacity 0.05s;
   }
+
+  /* ── Futuristic Home Page Animations ─────────────────────────── */
+  @keyframes floatOrb {
+    0%   { transform: translate(0px, 0px) scale(1); }
+    50%  { transform: translate(30px, -25px) scale(1.08); }
+    100% { transform: translate(-20px, 15px) scale(0.95); }
+  }
+
+  @keyframes fadeSlideDown {
+    0%   { opacity: 0; transform: translateY(-20px); }
+    100% { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes fadeIn {
+    0%   { opacity: 0; }
+    100% { opacity: 1; }
+  }
+
+  @keyframes scanLine {
+    0%   { top: -2px; opacity: 0; }
+    10%  { opacity: 1; }
+    90%  { opacity: 1; }
+    100% { top: 100%; opacity: 0; }
+  }
 }
+

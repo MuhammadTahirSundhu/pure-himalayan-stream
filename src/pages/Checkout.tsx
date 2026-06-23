@@ -1,18 +1,39 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { useCart } from '@/contexts/CartContext';
-import { CheckCircle, Upload, CreditCard, Truck, User } from 'lucide-react';
+import { CheckCircle, Upload, CreditCard, Truck, User, ArrowRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const API_URL = import.meta.env.VITE_API_URL || '';
+const CYAN = '#00d4ff';
 
 const paymentMethods = [
-  { id: 'easypaisa', name: 'Easypaisa', account: '0300-1234567', color: 'bg-green-500' },
+  { id: 'easypaisa', name: 'Easypaisa', account: '0300-1234567', color: 'bg-emerald-500' },
   { id: 'jazzcash', name: 'JazzCash', account: '0301-7654321', color: 'bg-red-500' },
-  { id: 'sadapay', name: 'SadaPay / NayaPay', account: '0302-9876543', color: 'bg-purple-500' },
-  { id: 'cod', name: 'Cash on Delivery', account: '', color: 'bg-muted-foreground' },
+  { id: 'sadapay', name: 'SadaPay / NayaPay', account: '0302-9876543', color: 'bg-violet-500' },
+  { id: 'cod', name: 'Cash on Delivery', account: '', color: 'bg-slate-400' },
 ];
+
+function FadeIn({ children, delay = 0, className = '' }: { children: React.ReactNode; delay?: number; className?: string }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [vis, setVis] = useState(false);
+  useEffect(() => {
+    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) { setVis(true); obs.disconnect(); } }, { threshold: 0.1 });
+    if (ref.current) obs.observe(ref.current);
+    return () => obs.disconnect();
+  }, []);
+  return (
+    <div ref={ref} className={className} style={{ opacity: vis ? 1 : 0, transform: vis ? 'translateY(0)' : 'translateY(24px)', transition: `opacity 0.7s ease ${delay}ms, transform 0.7s ease ${delay}ms` }}>
+      {children}
+    </div>
+  );
+}
+
+const inputStyle: React.CSSProperties = {
+  width: '100%', padding: '12px 16px', borderRadius: '12px', outline: 'none',
+  background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(0,212,255,0.2)',
+  color: '#fff', fontSize: '14px', transition: 'border-color 0.2s, box-shadow 0.2s',
+};
 
 export default function Checkout() {
   const { items, total, discount, promoCode, clearCart } = useCart();
@@ -32,44 +53,23 @@ export default function Checkout() {
     
     try {
       let screenshot_url = null;
-
-      // 1. Upload screenshot if a payment requires one
       if (screenshot) {
         const formData = new FormData();
         formData.append('screenshot', screenshot);
-
-        const uploadRes = await fetch(`${API_URL}/api/orders/screenshot`, {
-          method: 'POST',
-          body: formData,
-        });
-
-        if (!uploadRes.ok) {
-          throw new Error("Failed to upload screenshot.");
-        }
+        const uploadRes = await fetch(`${API_URL}/api/orders/screenshot`, { method: 'POST', body: formData });
+        if (!uploadRes.ok) throw new Error("Failed to upload screenshot.");
         const uploadData = await uploadRes.json();
         screenshot_url = uploadData.url;
       }
 
-      // 2. Submit final order
       const response = await fetch(`${API_URL}/api/orders`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          order_ref: ref,
-          customer_name: form.name,
-          phone: form.phone,
-          city: form.city,
-          area: form.area,
-          street: form.street,
-          payment_method: paymentMethod,
-          total: total,
-          screenshot_url,
-          items: items.map(p => ({
-            id: p.id,
-            name: p.name,
-            quantity: p.quantity,
-            price: p.price
-          }))
+          order_ref: ref, customer_name: form.name, phone: form.phone,
+          city: form.city, area: form.area, street: form.street,
+          payment_method: paymentMethod, total: total, screenshot_url,
+          items: items.map(p => ({ id: p.id, name: p.name, quantity: p.quantity, price: p.price }))
         })
       });
 
@@ -80,7 +80,6 @@ export default function Checkout() {
       clearCart();
     } catch (err) {
       alert("There was an error submitting your order. Please try again.");
-      console.error(err);
     } finally {
       setIsSubmitting(false);
     }
@@ -88,188 +87,240 @@ export default function Checkout() {
 
   if (items.length === 0 && step < 5) {
     return (
-      <div className="py-16 text-center">
-        <div className="container mx-auto px-4">
-          <h1 className="font-heading font-bold text-2xl text-foreground mb-4">Your cart is empty</h1>
-          <Button onClick={() => navigate('/products')} className="water-gradient text-primary-foreground">
+      <div className="min-h-screen flex items-center justify-center" style={{ background: '#030D1A' }}>
+        <div className="text-center">
+          <h1 className="font-heading font-bold text-3xl text-white mb-6">Your cart is empty</h1>
+          <button
+            onClick={() => navigate('/products')}
+            className="px-6 py-3 rounded-xl font-bold text-white transition-all duration-300"
+            style={{ background: 'linear-gradient(135deg, #00d4ff, #0284c7)', boxShadow: '0 0 20px rgba(0,212,255,0.3)' }}
+          >
             Browse Products
-          </Button>
+          </button>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="py-16">
-      <div className="container mx-auto px-4 max-w-2xl">
-        <h1 className="font-heading font-bold text-3xl text-foreground mb-8 text-center">Checkout</h1>
+    <div className="min-h-screen" style={{ background: '#030D1A' }}>
+      {/* Background Orbs */}
+      <div className="fixed top-20 left-10 w-[500px] h-[500px] pointer-events-none"
+        style={{ background: 'radial-gradient(circle, rgba(0,212,255,0.03) 0%, transparent 60%)' }} />
 
-        {/* Steps indicator */}
-        <div className="flex items-center justify-center gap-2 mb-8">
-          {[1, 2, 3, 4, 5].map(s => (
-            <div key={s} className="flex items-center gap-2">
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${
-                step >= s ? 'water-gradient text-primary-foreground' : 'bg-muted text-muted-foreground'
-              }`}>{s}</div>
-              {s < 5 && <div className={`w-8 h-0.5 ${step > s ? 'bg-primary' : 'bg-muted'}`} />}
-            </div>
-          ))}
-        </div>
+      <div className="py-16 relative z-10">
+        <div className="container mx-auto px-4 max-w-2xl">
+          <FadeIn>
+            <h1 className="font-heading font-black text-4xl text-center text-white mb-10">Checkout</h1>
+          </FadeIn>
 
-        {/* Step 1: Delivery */}
-        {step === 1 && (
-          <div className="glass-card rounded-2xl p-6 space-y-4">
-            <h2 className="font-heading font-semibold text-xl flex items-center gap-2">
-              <User className="w-5 h-5 text-primary" /> Delivery Details
-            </h2>
-            <Input placeholder="Full Name *" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} />
-            <Input placeholder="Phone Number *" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} />
-            <Input placeholder="City *" value={form.city} onChange={e => setForm({ ...form, city: e.target.value })} />
-            <Input placeholder="Area / Locality" value={form.area} onChange={e => setForm({ ...form, area: e.target.value })} />
-            <Input placeholder="Street Address *" value={form.street} onChange={e => setForm({ ...form, street: e.target.value })} />
-            <Button
-              className="w-full water-gradient text-primary-foreground font-semibold"
-              disabled={!form.name || !form.phone || !form.city || !form.street}
-              onClick={() => setStep(2)}
-            >
-              Continue to Payment
-            </Button>
-          </div>
-        )}
-
-        {/* Step 2: Payment Method */}
-        {step === 2 && (
-          <div className="glass-card rounded-2xl p-6 space-y-4">
-            <h2 className="font-heading font-semibold text-xl flex items-center gap-2">
-              <CreditCard className="w-5 h-5 text-primary" /> Payment Method
-            </h2>
-            <div className="grid grid-cols-2 gap-3">
-              {paymentMethods.map(pm => (
-                <button
-                  key={pm.id}
-                  className={`p-4 rounded-xl border-2 text-left transition-all ${
-                    paymentMethod === pm.id
-                      ? 'border-primary bg-primary/5'
-                      : 'border-border hover:border-primary/50'
-                  }`}
-                  onClick={() => setPaymentMethod(pm.id)}
+          {/* Steps indicator */}
+          <FadeIn delay={100} className="flex items-center justify-center gap-2 mb-10">
+            {[1, 2, 3, 4, 5].map(s => (
+              <div key={s} className="flex items-center gap-2">
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 ${
+                  step >= s ? 'text-white' : 'text-slate-500'
+                }`}
+                style={{
+                  background: step >= s ? 'linear-gradient(135deg, #00d4ff, #0284c7)' : 'rgba(255,255,255,0.05)',
+                  boxShadow: step >= s ? '0 0 15px rgba(0,212,255,0.4)' : 'none',
+                }}
                 >
-                  <div className={`w-3 h-3 rounded-full ${pm.color} mb-2`} />
-                  <p className="font-semibold text-sm text-foreground">{pm.name}</p>
+                  {step > s ? <CheckCircle className="w-4 h-4" /> : s}
+                </div>
+                {s < 5 && <div className={`w-10 h-0.5 transition-colors duration-300`} style={{ background: step > s ? CYAN : 'rgba(255,255,255,0.1)' }} />}
+              </div>
+            ))}
+          </FadeIn>
+
+          <FadeIn delay={200}>
+            {/* Step 1: Delivery */}
+            {step === 1 && (
+              <div className="rounded-2xl p-6 space-y-4" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(0,212,255,0.15)', backdropFilter: 'blur(12px)' }}>
+                <h2 className="font-heading font-bold text-xl text-white flex items-center gap-2 mb-4">
+                  <User className="w-5 h-5" style={{ color: CYAN }} /> Delivery Details
+                </h2>
+                
+                {[
+                  { key: 'name', placeholder: 'Full Name *' },
+                  { key: 'phone', placeholder: 'Phone Number *' },
+                  { key: 'city', placeholder: 'City *' },
+                  { key: 'area', placeholder: 'Area / Locality' },
+                  { key: 'street', placeholder: 'Street Address *' }
+                ].map(f => (
+                  <input
+                    key={f.key} placeholder={f.placeholder}
+                    value={form[f.key as keyof typeof form]}
+                    onChange={e => setForm({ ...form, [f.key]: e.target.value })}
+                    style={inputStyle}
+                    onFocus={e => { e.currentTarget.style.borderColor = 'rgba(0,212,255,0.5)'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(0,212,255,0.1)'; }}
+                    onBlur={e => { e.currentTarget.style.borderColor = 'rgba(0,212,255,0.2)'; e.currentTarget.style.boxShadow = 'none'; }}
+                  />
+                ))}
+                
+                <button
+                  className="w-full py-3.5 mt-2 rounded-xl font-bold text-white transition-all duration-300"
+                  disabled={!form.name || !form.phone || !form.city || !form.street}
+                  onClick={() => setStep(2)}
+                  style={{
+                    background: (!form.name || !form.phone || !form.city || !form.street) ? 'rgba(255,255,255,0.1)' : 'linear-gradient(135deg, #00d4ff, #0284c7)',
+                    boxShadow: (!form.name || !form.phone || !form.city || !form.street) ? 'none' : '0 0 20px rgba(0,212,255,0.3)',
+                    opacity: (!form.name || !form.phone || !form.city || !form.street) ? 0.5 : 1
+                  }}
+                >
+                  Continue to Payment
                 </button>
-              ))}
-            </div>
-            <div className="flex gap-2">
-              <Button variant="outline" onClick={() => setStep(1)}>Back</Button>
-              <Button
-                className="flex-1 water-gradient text-primary-foreground font-semibold"
-                disabled={!paymentMethod}
-                onClick={() => setStep(paymentMethod === 'cod' ? 4 : 3)}
-              >
-                Continue
-              </Button>
-            </div>
-          </div>
-        )}
-
-        {/* Step 3: Account Info */}
-        {step === 3 && selectedPayment && (
-          <div className="glass-card rounded-2xl p-6 space-y-4">
-            <h2 className="font-heading font-semibold text-xl">Transfer Payment</h2>
-            <div className="p-4 rounded-xl bg-primary/5 border border-primary/20">
-              <p className="text-sm text-muted-foreground mb-1">Send <strong>PKR {Math.round(total).toLocaleString()}</strong> to:</p>
-              <p className="font-heading font-bold text-2xl text-primary">{selectedPayment.account}</p>
-              <p className="text-sm text-muted-foreground mt-1">{selectedPayment.name} — One Water</p>
-            </div>
-            <p className="text-sm text-muted-foreground">After transferring, proceed to upload your payment screenshot.</p>
-            <div className="flex gap-2">
-              <Button variant="outline" onClick={() => setStep(2)}>Back</Button>
-              <Button className="flex-1 water-gradient text-primary-foreground font-semibold" onClick={() => setStep(4)}>
-                I've Transferred — Upload Screenshot
-              </Button>
-            </div>
-          </div>
-        )}
-
-        {/* Step 4: Screenshot Upload */}
-        {step === 4 && (
-          <div className="glass-card rounded-2xl p-6 space-y-4">
-            <h2 className="font-heading font-semibold text-xl flex items-center gap-2">
-              <Upload className="w-5 h-5 text-primary" />
-              {paymentMethod === 'cod' ? 'Confirm Order' : 'Upload Payment Screenshot'}
-            </h2>
-
-            {paymentMethod !== 'cod' && (
-              <div className="border-2 border-dashed border-border rounded-xl p-8 text-center">
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={e => setScreenshot(e.target.files?.[0] || null)}
-                  className="hidden"
-                  id="screenshot-upload"
-                />
-                <label htmlFor="screenshot-upload" className="cursor-pointer">
-                  <Upload className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
-                  <p className="text-sm text-muted-foreground">
-                    {screenshot ? screenshot.name : 'Click to upload payment screenshot'}
-                  </p>
-                </label>
               </div>
             )}
 
-            {/* Order Summary */}
-            <div className="p-4 rounded-xl bg-muted/50 space-y-2">
-              <h3 className="font-semibold text-sm">Order Summary</h3>
-              {items.map(item => (
-                <div key={item.id} className="flex justify-between text-sm">
-                  <span>{item.name} x{item.quantity}</span>
-                  <span>PKR {item.price * item.quantity}</span>
+            {/* Step 2: Payment Method */}
+            {step === 2 && (
+              <div className="rounded-2xl p-6 space-y-4" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(0,212,255,0.15)', backdropFilter: 'blur(12px)' }}>
+                <h2 className="font-heading font-bold text-xl text-white flex items-center gap-2 mb-4">
+                  <CreditCard className="w-5 h-5" style={{ color: CYAN }} /> Payment Method
+                </h2>
+                <div className="grid grid-cols-2 gap-3">
+                  {paymentMethods.map(pm => (
+                    <button
+                      key={pm.id}
+                      className="p-4 rounded-xl border-2 text-left transition-all duration-300"
+                      style={{
+                        borderColor: paymentMethod === pm.id ? CYAN : 'rgba(255,255,255,0.1)',
+                        background: paymentMethod === pm.id ? 'rgba(0,212,255,0.05)' : 'rgba(255,255,255,0.02)'
+                      }}
+                      onClick={() => setPaymentMethod(pm.id)}
+                    >
+                      <div className={`w-3 h-3 rounded-full ${pm.color} mb-2 shadow-lg`} />
+                      <p className="font-semibold text-sm text-white">{pm.name}</p>
+                    </button>
+                  ))}
                 </div>
-              ))}
-              {promoCode && <p className="text-xs text-accent">Promo: {promoCode} (-{discount}%)</p>}
-              <div className="border-t border-border pt-2 flex justify-between font-semibold">
-                <span>Total</span>
-                <span>PKR {Math.round(total).toLocaleString()}</span>
+                <div className="flex gap-3 mt-4">
+                  <button onClick={() => setStep(1)} className="px-6 py-3.5 rounded-xl text-white font-medium" style={{ background: 'rgba(255,255,255,0.05)' }}>Back</button>
+                  <button
+                    className="flex-1 py-3.5 rounded-xl font-bold text-white transition-all duration-300"
+                    disabled={!paymentMethod}
+                    onClick={() => setStep(paymentMethod === 'cod' ? 4 : 3)}
+                    style={{
+                      background: !paymentMethod ? 'rgba(255,255,255,0.1)' : 'linear-gradient(135deg, #00d4ff, #0284c7)',
+                      boxShadow: !paymentMethod ? 'none' : '0 0 20px rgba(0,212,255,0.3)',
+                      opacity: !paymentMethod ? 0.5 : 1
+                    }}
+                  >
+                    Continue
+                  </button>
+                </div>
               </div>
-            </div>
+            )}
 
-            <div className="flex gap-2">
-              <Button variant="outline" onClick={() => setStep(paymentMethod === 'cod' ? 2 : 3)}>Back</Button>
-              <Button
-                className="flex-1 water-gradient text-primary-foreground font-semibold"
-                disabled={(paymentMethod !== 'cod' && !screenshot) || isSubmitting}
-                onClick={handleSubmitOrder}
-              >
-                {isSubmitting ? 'Submitting...' : (paymentMethod === 'cod' ? 'Place Order (COD)' : 'Submit Order')}
-              </Button>
-            </div>
-          </div>
-        )}
+            {/* Step 3: Account Info */}
+            {step === 3 && selectedPayment && (
+              <div className="rounded-2xl p-6 space-y-4" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(0,212,255,0.15)', backdropFilter: 'blur(12px)' }}>
+                <h2 className="font-heading font-bold text-xl text-white mb-2">Transfer Payment</h2>
+                <div className="p-5 rounded-xl" style={{ background: 'rgba(0,212,255,0.05)', border: '1px solid rgba(0,212,255,0.2)' }}>
+                  <p className="text-sm mb-1" style={{ color: 'rgba(150,200,255,0.7)' }}>Send <strong className="text-white">PKR {Math.round(total).toLocaleString()}</strong> to:</p>
+                  <p className="font-heading font-black text-3xl" style={{ color: CYAN, letterSpacing: '2px' }}>{selectedPayment.account}</p>
+                  <p className="text-sm mt-1" style={{ color: 'rgba(150,200,255,0.7)' }}>{selectedPayment.name} — One Water</p>
+                </div>
+                <p className="text-sm" style={{ color: 'rgba(150,200,255,0.7)' }}>After transferring, proceed to upload your payment screenshot.</p>
+                <div className="flex gap-3 mt-4">
+                  <button onClick={() => setStep(2)} className="px-6 py-3.5 rounded-xl text-white font-medium" style={{ background: 'rgba(255,255,255,0.05)' }}>Back</button>
+                  <button
+                    className="flex-1 py-3.5 rounded-xl font-bold text-white transition-all duration-300"
+                    onClick={() => setStep(4)}
+                    style={{ background: 'linear-gradient(135deg, #00d4ff, #0284c7)', boxShadow: '0 0 20px rgba(0,212,255,0.3)' }}
+                  >
+                    I've Transferred <ArrowRight className="w-4 h-4 inline ml-1" />
+                  </button>
+                </div>
+              </div>
+            )}
 
-        {/* Step 5: Success */}
-        {step === 5 && (
-          <div className="glass-card rounded-2xl p-8 text-center">
-            <CheckCircle className="w-16 h-16 text-accent mx-auto mb-4" />
-            <h2 className="font-heading font-bold text-2xl text-foreground mb-2">Order Placed!</h2>
-            <p className="text-muted-foreground mb-4">Thank you for choosing One Water.</p>
-            <div className="p-4 rounded-xl bg-primary/5 border border-primary/20 mb-6">
-              <p className="text-sm text-muted-foreground">Order Reference</p>
-              <p className="font-heading font-bold text-2xl text-primary">{orderRef}</p>
-            </div>
-            <div className="flex flex-col gap-3">
-              <a
-                href={`https://wa.me/923203133140?text=Hi! I just placed order ${orderRef}. Please confirm.`}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <Button className="w-full bg-accent text-accent-foreground font-semibold">
-                  Confirm on WhatsApp
-                </Button>
-              </a>
-              <Button variant="outline" onClick={() => navigate('/')}>Back to Home</Button>
-            </div>
-          </div>
-        )}
+            {/* Step 4: Screenshot & Summary */}
+            {step === 4 && (
+              <div className="rounded-2xl p-6 space-y-5" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(0,212,255,0.15)', backdropFilter: 'blur(12px)' }}>
+                <h2 className="font-heading font-bold text-xl text-white flex items-center gap-2">
+                  <Upload className="w-5 h-5" style={{ color: CYAN }} />
+                  {paymentMethod === 'cod' ? 'Confirm Order' : 'Upload Payment Screenshot'}
+                </h2>
+
+                {paymentMethod !== 'cod' && (
+                  <div className="border-2 border-dashed rounded-xl p-8 text-center transition-colors"
+                    style={{ borderColor: 'rgba(0,212,255,0.3)', background: 'rgba(0,212,255,0.02)' }}>
+                    <input type="file" accept="image/*" onChange={e => setScreenshot(e.target.files?.[0] || null)} className="hidden" id="screenshot-upload" />
+                    <label htmlFor="screenshot-upload" className="cursor-pointer block">
+                      <Upload className="w-10 h-10 mx-auto mb-3" style={{ color: CYAN }} />
+                      <p className="text-sm font-medium" style={{ color: screenshot ? '#fff' : 'rgba(150,200,255,0.7)' }}>
+                        {screenshot ? screenshot.name : 'Click to upload payment screenshot'}
+                      </p>
+                    </label>
+                  </div>
+                )}
+
+                <div className="p-5 rounded-xl space-y-3" style={{ background: 'rgba(255,255,255,0.02)' }}>
+                  <h3 className="font-semibold text-sm text-white mb-2">Order Summary</h3>
+                  {items.map(item => (
+                    <div key={item.id} className="flex justify-between text-sm text-white">
+                      <span style={{ color: 'rgba(150,200,255,0.8)' }}>{item.name} <span style={{ color: CYAN }}>x{item.quantity}</span></span>
+                      <span>PKR {item.price * item.quantity}</span>
+                    </div>
+                  ))}
+                  {promoCode && <p className="text-xs" style={{ color: '#10b981' }}>Promo: {promoCode} (-{discount}%)</p>}
+                  <div className="border-t pt-3 flex justify-between font-bold text-lg text-white" style={{ borderColor: 'rgba(255,255,255,0.1)' }}>
+                    <span>Total</span>
+                    <span style={{ color: CYAN }}>PKR {Math.round(total).toLocaleString()}</span>
+                  </div>
+                </div>
+
+                <div className="flex gap-3">
+                  <button onClick={() => setStep(paymentMethod === 'cod' ? 2 : 3)} className="px-6 py-3.5 rounded-xl text-white font-medium" style={{ background: 'rgba(255,255,255,0.05)' }}>Back</button>
+                  <button
+                    className="flex-1 py-3.5 rounded-xl font-bold text-white transition-all duration-300"
+                    disabled={(paymentMethod !== 'cod' && !screenshot) || isSubmitting}
+                    onClick={handleSubmitOrder}
+                    style={{
+                      background: ((paymentMethod !== 'cod' && !screenshot) || isSubmitting) ? 'rgba(255,255,255,0.1)' : 'linear-gradient(135deg, #00d4ff, #0284c7)',
+                      boxShadow: ((paymentMethod !== 'cod' && !screenshot) || isSubmitting) ? 'none' : '0 0 20px rgba(0,212,255,0.3)',
+                      opacity: ((paymentMethod !== 'cod' && !screenshot) || isSubmitting) ? 0.5 : 1
+                    }}
+                  >
+                    {isSubmitting ? 'Submitting...' : (paymentMethod === 'cod' ? 'Place Order (COD)' : 'Submit Order')}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Step 5: Success */}
+            {step === 5 && (
+              <div className="rounded-2xl p-8 text-center animate-in fade-in slide-in-from-bottom-8 duration-500"
+                style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(0,212,255,0.2)', backdropFilter: 'blur(12px)' }}>
+                <div className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-5"
+                  style={{ background: 'rgba(0,212,255,0.1)', border: '1px solid rgba(0,212,255,0.3)', boxShadow: '0 0 30px rgba(0,212,255,0.2)' }}>
+                  <CheckCircle className="w-10 h-10" style={{ color: CYAN }} />
+                </div>
+                <h2 className="font-heading font-black text-3xl text-white mb-2">Order Placed!</h2>
+                <p className="mb-6" style={{ color: 'rgba(150,200,255,0.7)' }}>Thank you for choosing One Water.</p>
+                
+                <div className="p-5 rounded-xl mb-6" style={{ background: 'rgba(0,212,255,0.05)', border: '1px solid rgba(0,212,255,0.2)' }}>
+                  <p className="text-sm mb-1" style={{ color: 'rgba(150,200,255,0.7)' }}>Order Reference</p>
+                  <p className="font-heading font-bold text-2xl tracking-widest" style={{ color: CYAN }}>{orderRef}</p>
+                </div>
+                
+                <div className="flex flex-col gap-3">
+                  <a href={`https://wa.me/923203133140?text=Hi! I just placed order ${orderRef}. Please confirm.`} target="_blank" rel="noopener noreferrer">
+                    <button className="w-full py-3.5 rounded-xl font-bold text-white transition-all duration-300"
+                      style={{ background: 'rgba(0,212,255,0.1)', border: '1px solid rgba(0,212,255,0.3)', color: CYAN }}>
+                      Confirm on WhatsApp
+                    </button>
+                  </a>
+                  <button onClick={() => navigate('/')} className="py-3.5 rounded-xl font-medium text-white" style={{ background: 'rgba(255,255,255,0.05)' }}>
+                    Back to Home
+                  </button>
+                </div>
+              </div>
+            )}
+          </FadeIn>
+        </div>
       </div>
     </div>
   );

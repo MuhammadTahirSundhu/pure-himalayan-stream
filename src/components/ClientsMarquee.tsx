@@ -28,9 +28,29 @@ function ClientCard({ client }: { client: Client }) {
     .toUpperCase();
 
   const content = (
-    <div className="clients-card group flex flex-col items-center justify-center gap-3 px-8 py-5 mx-3 min-w-[160px] rounded-2xl border border-border/60 bg-card/80 backdrop-blur-sm shadow-md hover:shadow-xl hover:shadow-primary/10 hover:-translate-y-1 hover:border-primary/40 transition-all duration-400 cursor-pointer select-none">
+    <div
+      className="group flex flex-col items-center justify-center gap-3 px-8 py-5 mx-3 min-w-[160px] rounded-2xl cursor-pointer select-none transition-all duration-400"
+      style={{
+        background: 'rgba(255,255,255,0.04)',
+        border: '1px solid rgba(0,212,255,0.12)',
+        backdropFilter: 'blur(12px)',
+      }}
+      onMouseEnter={e => {
+        (e.currentTarget as HTMLElement).style.border = '1px solid rgba(0,212,255,0.4)';
+        (e.currentTarget as HTMLElement).style.background = 'rgba(0,212,255,0.08)';
+        (e.currentTarget as HTMLElement).style.transform = 'translateY(-4px)';
+        (e.currentTarget as HTMLElement).style.boxShadow = '0 8px 30px rgba(0,212,255,0.15)';
+      }}
+      onMouseLeave={e => {
+        (e.currentTarget as HTMLElement).style.border = '1px solid rgba(0,212,255,0.12)';
+        (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.04)';
+        (e.currentTarget as HTMLElement).style.transform = 'translateY(0)';
+        (e.currentTarget as HTMLElement).style.boxShadow = 'none';
+      }}
+    >
       {/* Logo or avatar */}
-      <div className="w-14 h-14 rounded-xl overflow-hidden flex items-center justify-center shrink-0 shadow-sm">
+      <div className="w-14 h-14 rounded-xl overflow-hidden flex items-center justify-center shrink-0"
+        style={{ border: '1px solid rgba(0,212,255,0.2)' }}>
         {client.logo_url ? (
           <img
             src={client.logo_url}
@@ -53,11 +73,13 @@ function ClientCard({ client }: { client: Client }) {
         </div>
       </div>
       {/* Client name */}
-      <span className="text-sm font-semibold text-foreground text-center leading-tight whitespace-nowrap max-w-[130px] overflow-hidden text-ellipsis group-hover:text-primary transition-colors">
+      <span className="text-sm font-semibold text-center leading-tight whitespace-nowrap max-w-[130px] overflow-hidden text-ellipsis transition-colors"
+        style={{ color: 'rgba(200,230,255,0.9)' }}>
         {client.name}
       </span>
     </div>
   );
+
 
   if (client.website_url) {
     return (
@@ -97,7 +119,7 @@ export default function ClientsMarquee() {
       .catch(() => setIsLoading(false));
   }, []);
 
-  // Smooth JS-driven marquee (pauses on hover)
+  // Smooth JS-driven marquee — scrolls LEFT → RIGHT, pauses on hover
   useEffect(() => {
     if (isLoading || clients.length === 0) return;
     const track = trackRef.current;
@@ -105,12 +127,16 @@ export default function ClientsMarquee() {
 
     const speed = 0.6; // px per frame — lower = slower
 
+    // Start at -halfWidth so the second duplicated copy fills the viewport
+    // and we scroll positively toward 0, then jump back to -halfWidth
+    const halfWidth = () => track.scrollWidth / 2;
+    posRef.current = -halfWidth();
+
     const animate = () => {
       if (!isPausedRef.current) {
-        posRef.current -= speed;
-        const halfWidth = track.scrollWidth / 2;
-        if (Math.abs(posRef.current) >= halfWidth) {
-          posRef.current = 0;
+        posRef.current += speed; // move RIGHT
+        if (posRef.current >= 0) {
+          posRef.current = -halfWidth(); // seamless reset
         }
         track.style.transform = `translateX(${posRef.current}px)`;
       }
@@ -127,24 +153,34 @@ export default function ClientsMarquee() {
   const displayClients = [...clients, ...clients];
 
   return (
-    <section className="py-16 relative overflow-hidden bg-gradient-to-b from-muted/30 to-background">
+    <section className="py-16 relative overflow-hidden" style={{ background: 'linear-gradient(180deg, #030D1A 0%, #041422 50%, #030D1A 100%)' }}>
       {/* Section heading */}
       <div className="container mx-auto px-4 text-center mb-10">
-        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 border border-primary/20 mb-4">
-          <Building2 className="w-4 h-4 text-primary" />
-          <span className="text-sm font-medium text-primary">Trusted Partners</span>
+        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full mb-4"
+          style={{ background: 'rgba(0,212,255,0.08)', border: '1px solid rgba(0,212,255,0.25)' }}>
+          <Building2 className="w-4 h-4" style={{ color: '#00d4ff' }} />
+          <span className="text-sm font-medium" style={{ color: '#00d4ff' }}>Trusted Partners</span>
         </div>
-        <h2 className="font-heading font-bold text-3xl md:text-4xl text-foreground mb-3">
-          Our Featured <span className="text-primary">Clients</span>
+        <h2 className="font-heading font-bold text-3xl md:text-4xl text-white mb-3">
+          Our Featured{' '}
+          <span style={{
+            background: 'linear-gradient(135deg, #00d4ff, #3b82f6)',
+            WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text',
+          }}>
+            Clients
+          </span>
         </h2>
-        <p className="text-muted-foreground max-w-lg mx-auto">
+        <p className="max-w-lg mx-auto" style={{ color: 'rgba(150,200,255,0.7)' }}>
           Proudly serving businesses, restaurants, offices, and institutions across Pakistan.
         </p>
       </div>
 
       {/* Gradient fade edges */}
-      <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-24 z-10 bg-gradient-to-r from-background to-transparent" />
-      <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-24 z-10 bg-gradient-to-l from-background to-transparent" />
+      <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-24 z-10"
+        style={{ background: 'linear-gradient(to right, #030D1A, transparent)' }} />
+      <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-24 z-10"
+        style={{ background: 'linear-gradient(to left, #030D1A, transparent)' }} />
+
 
       {/* Scrolling track */}
       <div

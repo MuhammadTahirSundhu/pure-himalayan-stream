@@ -209,6 +209,39 @@ export const initDB = async () => {
       );
     `);
 
+    // ── Offers (Dynamic Promo Blocks) ─────────────────────────────────────
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS public.offers (
+        id text PRIMARY KEY,
+        title text NOT NULL,
+        description text NOT NULL,
+        original_price numeric DEFAULT 0,
+        sale_price numeric DEFAULT 0,
+        promo_code text NOT NULL,
+        discount_text text NOT NULL,
+        image_url text,
+        badge_text text,
+        color_gradient text,
+        icon_color text,
+        sort_order integer DEFAULT 0,
+        is_active boolean DEFAULT true,
+        created_at timestamptz DEFAULT now()
+      );
+    `);
+
+    const offerCount = await client.query('SELECT COUNT(*) AS c FROM public.offers');
+    if (parseInt(offerCount.rows[0].c) === 0) {
+      console.log('🌱 Seeding offers...');
+      await client.query(`
+        INSERT INTO public.offers (id, title, description, original_price, sale_price, promo_code, discount_text, image_url, badge_text, color_gradient, icon_color, sort_order) VALUES
+        ('eid-bundle', 'Eid Family Bundle', '12x 1.5L bottles + 6x 500ml bottles. Perfect for Eid gatherings.', 1500, 1275, 'EID2026', '15% OFF', '/assets/brand/bottle-1500ml.png', '🎉 Eid Special', 'from-cyan-500/20 to-cyan-700/5', 'text-cyan-400', 1),
+        ('ramadan-pack', 'Ramadan Iftar Pack', '24x 500ml bottles for Iftar gatherings and Suhoor hydration.', 1200, 1080, 'RAMADAN10', '10% OFF', '/assets/brand/bottle-500ml.png', '🌙 Ramadan', 'from-emerald-500/20 to-emerald-700/5', 'text-emerald-400', 2),
+        ('welcome-offer', 'New Customer Welcome', 'First-time order? Get 5% off on any order. No minimum!', 0, 0, 'WELCOME5', '5% OFF', '/assets/brand/bottle-500ml.png', '🎁 Welcome', 'from-violet-500/20 to-violet-700/5', 'text-violet-400', 3),
+        ('bulk-20', 'Bulk Order Discount', 'Order 50+ bottles of any size and get 20% off the entire order.', 0, 0, 'ONEWATER20', '20% OFF', '/assets/brand/bottle-1500ml.png', '📦 Bulk', 'from-blue-500/20 to-blue-700/5', 'text-blue-400', 4)
+        ON CONFLICT (id) DO NOTHING;
+      `);
+    }
+
     await client.query('COMMIT');
     console.log('✅ Database initialized successfully.\n');
 

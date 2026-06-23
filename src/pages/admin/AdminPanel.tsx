@@ -49,7 +49,8 @@ const sidebarItems = [
   { id: 'orders',     label: 'Orders',     icon: ShoppingCart    },
   { id: 'products',   label: 'Products',   icon: Package         },
   { id: 'messages',   label: 'Messages',   icon: MessageSquare   },
-  { id: 'offers',     label: 'Promo Codes',icon: Tag             },
+  { id: 'offers',     label: 'Offers',     icon: Megaphone       },
+  { id: 'promo_codes',label: 'Promo Codes',icon: Tag             },
   { id: 'clients',    label: 'Clients',    icon: Building2       },
   { id: 'quality',    label: 'Lab Reports',icon: FlaskConical    },
   { id: 'settings',   label: 'Settings',   icon: Settings        },
@@ -264,8 +265,16 @@ export default function AdminPanel({ onLogout }: { onLogout: () => void }) {
           </div>
         )}
 
-        {/* ── Promo Codes ───────────────────────── */}
+        {/* ── Offers ───────────────────────── */}
         {tab === 'offers' && (
+          <div>
+            <h1 className="font-heading font-bold text-2xl text-foreground mb-6">Dynamic Offers</h1>
+            <OffersTab />
+          </div>
+        )}
+
+        {/* ── Promo Codes ───────────────────────── */}
+        {tab === 'promo_codes' && (
           <div>
             <h1 className="font-heading font-bold text-2xl text-foreground mb-6">Promo Codes</h1>
             <div className="glass-card rounded-xl p-6 space-y-4 max-w-xl mb-6">
@@ -473,27 +482,42 @@ function OrdersTable({ orders, onView, statusColors, isLoading }: {
 }
 
 function ProductsTab() {
-  const [products, setProducts] = useState<Array<{id:string;name:string;size:string;price:number;in_stock:boolean;category?:string}>>([]);
+  const [products, setProducts] = useState<Array<{id:string;name:string;size:string;price:number;in_stock:boolean;category?:string;image_url?:string}>>([]);
   const [editing, setEditing] = useState<string | null>(null);
   const [editPrice, setEditPrice] = useState('');
-  
+
   // Add product state
-  const [newProductId, setNewProductId] = useState('');
+  const [newProductId, setNewProductId]     = useState('');
   const [newProductName, setNewProductName] = useState('');
   const [newProductSize, setNewProductSize] = useState('');
   const [newProductPrice, setNewProductPrice] = useState('');
-  const [newProductCat, setNewProductCat] = useState('bottle');
-
+  const [newProductCat, setNewProductCat]   = useState('bottle');
+  const [newProductDesc, setNewProductDesc] = useState('');
+  const [imageFile, setImageFile]           = useState<File | null>(null);
+  const [imagePreview, setImagePreview]     = useState<string | null>(null);
+  const [isAdding, setIsAdding]             = useState(false);
+  const imgInputRef = useRef<HTMLInputElement>(null);
+  const token = () => localStorage.getItem('ow_admin_token') || '';
 
   useEffect(() => {
-    fetch('/api/admin/products', { headers: { 'Authorization': `Bearer ${localStorage.getItem('ow_admin_token')}` } })
+    fetch('/api/admin/products', { headers: { 'Authorization': `Bearer ${token()}` } })
       .then(r => r.json()).then(setProducts).catch(console.error);
   }, []);
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] || null;
+    setImageFile(file);
+    setImagePreview(file ? URL.createObjectURL(file) : null);
+  };
+  const clearImage = () => {
+    setImageFile(null); setImagePreview(null);
+    if (imgInputRef.current) imgInputRef.current.value = '';
+  };
 
   const savePrice = async (id: string) => {
     await fetch(`/api/admin/products/${id}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('ow_admin_token')}` },
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token()}` },
       body: JSON.stringify({ price: Number(editPrice) }),
     });
     setProducts(p => p.map(prod => prod.id === id ? { ...prod, price: Number(editPrice) } : prod));
@@ -503,7 +527,7 @@ function ProductsTab() {
   const toggleStock = async (id: string, current: boolean) => {
     await fetch(`/api/admin/products/${id}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('ow_admin_token')}` },
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token()}` },
       body: JSON.stringify({ in_stock: !current }),
     });
     setProducts(p => p.map(prod => prod.id === id ? { ...prod, in_stock: !current } : prod));
@@ -511,24 +535,33 @@ function ProductsTab() {
 
   const handleAddProduct = async () => {
     if (!newProductId || !newProductName || !newProductSize || !newProductPrice) return alert('Fill all required fields');
+    setIsAdding(true);
     try {
+      const formData = new FormData();
+      formData.append('id', newProductId.trim());
+      formData.append('name', newProductName.trim());
+      formData.append('size', newProductSize.trim());
+      formData.append('price', newProductPrice);
+      formData.append('category', newProductCat);
+      formData.append('description', newProductDesc);
+      if (imageFile) formData.append('image', imageFile);
+
       const res = await fetch('/api/admin/products', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('ow_admin_token')}` },
-        body: JSON.stringify({
-          id: newProductId, name: newProductName, size: newProductSize, 
-          price: Number(newProductPrice), category: newProductCat
-        })
+        headers: { 'Authorization': `Bearer ${token()}` }, // NO Content-Type — browser sets multipart boundary
+        body: formData,
       });
       if (res.ok) {
         const data = await res.json();
         setProducts([...products, data.product]);
-        setNewProductId(''); setNewProductName(''); setNewProductSize(''); setNewProductPrice('');
+        setNewProductId(''); setNewProductName(''); setNewProductSize('');
+        setNewProductPrice(''); setNewProductDesc(''); clearImage();
       } else {
         const d = await res.json();
         alert(`Failed: ${d.message}`);
       }
     } catch { alert('Network error'); }
+    finally { setIsAdding(false); }
   };
 
   const handleDeleteProduct = async (id: string) => {
@@ -536,32 +569,68 @@ function ProductsTab() {
     try {
       const res = await fetch(`/api/admin/products/${id}`, {
         method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('ow_admin_token')}` },
+        headers: { 'Authorization': `Bearer ${token()}` },
       });
-      if (res.ok) {
-        setProducts(p => p.filter(prod => prod.id !== id));
-      } else {
-        alert('Failed to delete product.');
-      }
+      if (res.ok) setProducts(p => p.filter(prod => prod.id !== id));
+      else alert('Failed to delete product.');
     } catch { alert('Network error'); }
   };
 
   return (
     <div className="space-y-6">
       <div className="glass-card rounded-xl p-6 space-y-4 max-w-3xl">
-        <h3 className="font-semibold">Add New Product</h3>
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-          <Input placeholder="ID (e.g. 500ml_bottle)" value={newProductId} onChange={e => setNewProductId(e.target.value)} />
-          <Input placeholder="Name (e.g. 500ml Bottle)" value={newProductName} onChange={e => setNewProductName(e.target.value)} />
-          <Input placeholder="Size (e.g. 500ml)" value={newProductSize} onChange={e => setNewProductSize(e.target.value)} />
-          <Input type="number" placeholder="Price" value={newProductPrice} onChange={e => setNewProductPrice(e.target.value)} />
+        <h3 className="font-semibold flex items-center gap-2"><Plus className="w-4 h-4 text-primary" /> Add New Product</h3>
+
+        {/* Text fields */}
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+          <Input placeholder="ID (e.g. 500ml_bottle) *" value={newProductId} onChange={e => setNewProductId(e.target.value)} />
+          <Input placeholder="Name (e.g. 500ml Bottle) *" value={newProductName} onChange={e => setNewProductName(e.target.value)} />
+          <Input placeholder="Size (e.g. 500ml) *" value={newProductSize} onChange={e => setNewProductSize(e.target.value)} />
+          <Input type="number" placeholder="Price (PKR) *" value={newProductPrice} onChange={e => setNewProductPrice(e.target.value)} />
           <Select value={newProductCat} onValueChange={setNewProductCat}>
-            <SelectTrigger><SelectValue/></SelectTrigger>
+            <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent><SelectItem value="bottle">Bottle</SelectItem><SelectItem value="dispenser">Dispenser</SelectItem></SelectContent>
           </Select>
+          <Input placeholder="Description (optional)" value={newProductDesc} onChange={e => setNewProductDesc(e.target.value)} />
         </div>
-        <Button className="water-gradient text-primary-foreground" onClick={handleAddProduct}>Add Product</Button>
+
+        {/* Image upload */}
+        <div>
+          <p className="text-sm font-medium text-foreground mb-2">Product Image <span className="text-muted-foreground font-normal">(optional — PNG, JPG, WebP · max 5 MB)</span></p>
+          <input ref={imgInputRef} type="file" accept="image/*" className="hidden" id="product-img-upload" onChange={handleImageChange} />
+
+          {imagePreview ? (
+            <div className="flex items-center gap-4 p-4 rounded-xl border border-border bg-muted/30">
+              <img src={imagePreview} alt="Preview" className="h-20 w-20 object-contain rounded-lg border border-border bg-white p-2" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-foreground truncate">{imageFile?.name}</p>
+                <p className="text-xs text-muted-foreground">{imageFile ? `${(imageFile.size / 1024).toFixed(0)} KB` : ''} · Will upload to Cloudinary</p>
+              </div>
+              <Button variant="ghost" size="sm" onClick={clearImage} className="text-destructive hover:text-destructive">
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
+          ) : (
+            <label htmlFor="product-img-upload" className="flex flex-col items-center justify-center gap-2 p-6 rounded-xl border-2 border-dashed border-border hover:border-primary/50 hover:bg-primary/5 transition-colors cursor-pointer">
+              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                <Package className="w-5 h-5 text-primary" />
+              </div>
+              <p className="text-sm font-medium text-foreground">Click to upload product image</p>
+              <p className="text-xs text-muted-foreground">PNG, JPG, WebP (max 5 MB)</p>
+            </label>
+          )}
+        </div>
+
+        <Button className="water-gradient text-primary-foreground" onClick={handleAddProduct} disabled={isAdding}>
+          {isAdding ? (
+            <span className="flex items-center gap-2">
+              <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>
+              Uploading...
+            </span>
+          ) : 'Add Product'}
+        </Button>
       </div>
+
 
       <div className="glass-card rounded-xl overflow-hidden">
       <Table>
@@ -841,6 +910,175 @@ function ClientsTab() {
                   <Button variant="destructive" size="sm" onClick={() => handleDelete(cl.id)}>
                     <Trash2 className="w-4 h-4" />
                   </Button>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+    </div>
+  );
+}
+
+// ─── OffersTab ────────────────────────────────────────────────────────────────
+
+interface Offer {
+  id: string; title: string; description: string; original_price: number;
+  sale_price: number; promo_code: string; discount_text: string; image_url: string;
+  badge_text: string; color_gradient: string; icon_color: string; sort_order: number;
+  is_active: boolean;
+}
+
+function OffersTab() {
+  const [offers, setOffers] = useState<Offer[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Form State
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [originalPrice, setOriginalPrice] = useState('');
+  const [salePrice, setSalePrice] = useState('');
+  const [promoCode, setPromoCode] = useState('');
+  const [discountText, setDiscountText] = useState('');
+  const [badgeText, setBadgeText] = useState('');
+  const [colorGradient, setColorGradient] = useState('from-cyan-500/20 to-cyan-700/5');
+  const [iconColor, setIconColor] = useState('text-cyan-400');
+  const [sortOrder, setSortOrder] = useState('0');
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [isAdding, setIsAdding] = useState(false);
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const fetchOffers = async () => {
+    setIsLoading(true);
+    try {
+      const res = await fetch('/api/admin/offers', { headers: { 'Authorization': `Bearer ${localStorage.getItem('ow_admin_token')}` } });
+      if (res.ok) setOffers(await res.json());
+    } catch { console.error('Failed to fetch offers'); }
+    finally { setIsLoading(false); }
+  };
+
+  useEffect(() => { fetchOffers(); }, []);
+
+  const clearFile = () => {
+    setImageFile(null); setPreviewUrl(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const f = e.target.files[0];
+      if (f.size > 3 * 1024 * 1024) return alert('File is too large (max 3 MB).');
+      setImageFile(f); setPreviewUrl(URL.createObjectURL(f));
+    }
+  };
+
+  const handleAdd = async () => {
+    if (!title || !description || !promoCode || !discountText) {
+      return alert('Title, Description, Promo Code, and Discount Text are required.');
+    }
+    setIsAdding(true);
+    try {
+      const formData = new FormData();
+      formData.append('title', title);
+      formData.append('description', description);
+      formData.append('original_price', originalPrice);
+      formData.append('sale_price', salePrice);
+      formData.append('promo_code', promoCode);
+      formData.append('discount_text', discountText);
+      formData.append('badge_text', badgeText);
+      formData.append('color_gradient', colorGradient);
+      formData.append('icon_color', iconColor);
+      formData.append('sort_order', sortOrder);
+      if (imageFile) formData.append('image', imageFile);
+
+      const res = await fetch('/api/admin/offers', {
+        method: 'POST', headers: { 'Authorization': `Bearer ${localStorage.getItem('ow_admin_token')}` }, body: formData,
+      });
+
+      if (res.ok) {
+        setTitle(''); setDescription(''); setOriginalPrice(''); setSalePrice('');
+        setPromoCode(''); setDiscountText(''); setBadgeText(''); clearFile();
+        fetchOffers();
+      } else {
+        alert('Failed to add offer.');
+      }
+    } catch { alert('Network error.'); }
+    finally { setIsAdding(false); }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Delete this offer?')) return;
+    try {
+      const res = await fetch(`/api/admin/offers/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${localStorage.getItem('ow_admin_token')}` } });
+      if (res.ok) setOffers(o => o.filter(x => x.id !== id));
+    } catch { alert('Network error.'); }
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="glass-card rounded-xl p-6 space-y-4 max-w-2xl">
+        <h3 className="font-semibold flex items-center gap-2"><Plus className="w-4 h-4 text-primary" /> Add New Offer</h3>
+        <div className="grid sm:grid-cols-2 gap-3">
+          <Input placeholder="Offer Title *" value={title} onChange={e => setTitle(e.target.value)} />
+          <Input placeholder="Badge Text (e.g. 🎉 Eid Special)" value={badgeText} onChange={e => setBadgeText(e.target.value)} />
+          <Input placeholder="Original Price" type="number" value={originalPrice} onChange={e => setOriginalPrice(e.target.value)} />
+          <Input placeholder="Sale Price" type="number" value={salePrice} onChange={e => setSalePrice(e.target.value)} />
+          <Input placeholder="Promo Code *" value={promoCode} onChange={e => setPromoCode(e.target.value.toUpperCase())} />
+          <Input placeholder="Discount Text * (e.g. 15% OFF)" value={discountText} onChange={e => setDiscountText(e.target.value)} />
+          <Input placeholder="Sort Order (0 = first)" type="number" value={sortOrder} onChange={e => setSortOrder(e.target.value)} />
+        </div>
+        <Textarea placeholder="Description *" value={description} onChange={e => setDescription(e.target.value)} rows={2} />
+        
+        <div>
+          <p className="text-sm font-medium mb-2">Offer Image</p>
+          <input ref={fileInputRef} type="file" accept="image/*" className="hidden" id="offer-image-upload" onChange={handleFileChange} />
+          {previewUrl ? (
+            <div className="flex items-center gap-4 p-4 rounded-xl border border-border bg-muted/30">
+              <img src={previewUrl} alt="Preview" className="h-16 w-16 object-contain rounded-lg border border-border bg-white p-1" />
+              <Button variant="ghost" size="sm" onClick={clearFile} className="shrink-0 text-destructive hover:text-destructive"><X className="w-4 h-4" /></Button>
+            </div>
+          ) : (
+            <label htmlFor="offer-image-upload" className="flex flex-col items-center justify-center gap-2 p-6 rounded-xl border-2 border-dashed border-border hover:border-primary/50 hover:bg-primary/5 cursor-pointer">
+              <Package className="w-5 h-5 text-primary" />
+              <p className="text-sm font-medium">Click to upload image</p>
+            </label>
+          )}
+        </div>
+
+        <Button className="water-gradient text-primary-foreground" onClick={handleAdd} disabled={isAdding}>
+          {isAdding ? 'Adding...' : 'Add Offer'}
+        </Button>
+      </div>
+
+      <div className="glass-card rounded-xl overflow-hidden">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Image</TableHead>
+              <TableHead>Title</TableHead>
+              <TableHead>Promo Code</TableHead>
+              <TableHead>Prices</TableHead>
+              <TableHead>Order</TableHead>
+              <TableHead>Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {offers.map(o => (
+              <TableRow key={o.id}>
+                <TableCell>
+                  {o.image_url ? <img src={o.image_url} alt="" className="h-8 w-auto max-w-[50px] object-contain rounded" /> : '—'}
+                </TableCell>
+                <TableCell className="font-semibold">{o.title}</TableCell>
+                <TableCell><code className="px-2 py-1 bg-muted rounded font-mono text-xs">{o.promo_code}</code></TableCell>
+                <TableCell className="text-sm">
+                  {o.original_price > 0 && <span className="line-through text-muted-foreground mr-2">{o.original_price}</span>}
+                  <span className="font-bold text-primary">{o.sale_price}</span>
+                </TableCell>
+                <TableCell>{o.sort_order}</TableCell>
+                <TableCell>
+                  <Button variant="destructive" size="sm" onClick={() => handleDelete(o.id)}><Trash2 className="w-4 h-4" /></Button>
                 </TableCell>
               </TableRow>
             ))}
