@@ -53,112 +53,6 @@ function AnimatedNumber({ target, suffix = '' }: { target: number; suffix?: stri
   return <span ref={ref}>{val.toLocaleString()}{suffix}</span>;
 }
 
-// ─── Vertical Tank-Chain Strip ────────────────────────────────────────────────
-function VerticalClientStrip({ direction = 'up' }: { direction?: 'up' | 'down' }) {
-  const [clients, setClients] = useState<Array<{ id: string; name: string; logo_url: string | null }>>([]);
-  const trackRef = useRef<HTMLDivElement>(null);
-  const posRef = useRef(0);
-  const animRef = useRef<number | null>(null);
-  const isPausedRef = useRef(false);
-
-  useEffect(() => {
-    fetch('/api/clients')
-      .then(r => r.json())
-      .then(data => setClients(Array.isArray(data) ? data : []))
-      .catch(() => {});
-  }, []);
-
-  useEffect(() => {
-    if (clients.length === 0) return;
-    const track = trackRef.current;
-    if (!track) return;
-    const speed = 0.5;
-    const halfH = () => track.scrollHeight / 2;
-    posRef.current = direction === 'up' ? 0 : -halfH();
-
-    const animate = () => {
-      if (!isPausedRef.current) {
-        posRef.current += direction === 'up' ? -speed : speed;
-        if (direction === 'up' && posRef.current <= -halfH()) posRef.current = 0;
-        if (direction === 'down' && posRef.current >= 0) posRef.current = -halfH();
-        track.style.transform = `translateY(${posRef.current}px)`;
-      }
-      animRef.current = requestAnimationFrame(animate);
-    };
-    animRef.current = requestAnimationFrame(animate);
-    return () => { if (animRef.current) cancelAnimationFrame(animRef.current); };
-  }, [clients, direction]);
-
-  const displayClients = Array(20).fill(clients).flat();
-
-  const initials = (name: string) =>
-    name.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
-
-  function nameToGradient(str: string) {
-    let hash = 0;
-    for (let i = 0; i < str.length; i++) hash = str.charCodeAt(i) + ((hash << 5) - hash);
-    const h1 = Math.abs(hash % 360);
-    return `linear-gradient(135deg, hsl(${h1},70%,55%), hsl(${(h1+40)%360},80%,45%))`;
-  }
-
-  if (clients.length === 0) return null;
-
-  return (
-    <div
-      className="absolute inset-y-0 overflow-hidden hidden lg:flex flex-col items-center w-[120px] pointer-events-none z-20"
-      style={{
-        maskImage: 'linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%)',
-        WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%)',
-      }}
-      onMouseEnter={() => { isPausedRef.current = true; }}
-      onMouseLeave={() => { isPausedRef.current = false; }}
-    >
-      <div ref={trackRef} className="flex flex-col gap-3 py-3 will-change-transform pointer-events-auto">
-        {displayClients.map((c, i) => (
-          <div
-            key={`${c.id}-${i}`}
-            title={c.name}
-            className="w-[90px] h-[90px] rounded-2xl flex flex-col items-center justify-center gap-1.5 shrink-0 cursor-default transition-all duration-300"
-            style={{
-              background: 'rgba(255,255,255,0.05)',
-              border: '1px solid rgba(0,212,255,0.15)',
-              backdropFilter: 'blur(10px)',
-            }}
-            onMouseEnter={e => {
-              (e.currentTarget as HTMLElement).style.border = '1px solid rgba(0,212,255,0.5)';
-              (e.currentTarget as HTMLElement).style.background = 'rgba(0,212,255,0.1)';
-              (e.currentTarget as HTMLElement).style.transform = 'scale(1.08)';
-            }}
-            onMouseLeave={e => {
-              (e.currentTarget as HTMLElement).style.border = '1px solid rgba(0,212,255,0.15)';
-              (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.05)';
-              (e.currentTarget as HTMLElement).style.transform = 'scale(1)';
-            }}
-          >
-            {c.logo_url ? (
-              <img
-                src={c.logo_url}
-                alt={c.name}
-                className="w-12 h-12 object-contain rounded-lg"
-                onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; (e.currentTarget.nextElementSibling as HTMLElement).style.display = 'flex'; }}
-              />
-            ) : null}
-            <div
-              className="w-12 h-12 rounded-lg flex items-center justify-center text-white font-bold text-base font-heading"
-              style={{ background: nameToGradient(c.name), display: c.logo_url ? 'none' : 'flex' }}
-            >
-              {initials(c.name)}
-            </div>
-            <span className="text-[9px] font-medium text-center leading-tight px-1 max-w-full overflow-hidden text-ellipsis whitespace-nowrap" style={{ color: 'rgba(180,220,255,0.7)' }}>
-              {c.name}
-            </span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 // ─── Section Reveal ───────────────────────────────────────────────────────────
 function FadeIn({ children, delay = 0, className = '' }: {
   children: React.ReactNode; delay?: number; className?: string;
@@ -201,6 +95,135 @@ function HexGrid() {
       </defs>
       <rect width="100%" height="100%" fill="url(#hex)" />
     </svg>
+  );
+}
+
+// ─── Vertical Tank-Chain Strip ────────────────────────────────────────────────
+function VerticalClientStrip({ direction = 'up', side = 'left' }: { direction?: 'up' | 'down'; side?: 'left' | 'right' }) {
+  const [clients, setClients] = useState<Array<{ id: string; name: string; logo_url: string | null }>>([]);
+  const trackRef = useRef<HTMLDivElement>(null);
+  const posRef = useRef(0);
+  const animRef = useRef<number | null>(null);
+  const isPausedRef = useRef(false);
+
+  useEffect(() => {
+    fetch('/api/clients')
+      .then(r => r.json())
+      .then(data => setClients(Array.isArray(data) ? data : []))
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    if (clients.length === 0) return;
+    const track = trackRef.current;
+    if (!track) return;
+    const speed = 0.6;
+    const halfH = () => track.scrollHeight / 2;
+    posRef.current = direction === 'up' ? 0 : -halfH();
+
+    const animate = () => {
+      if (!isPausedRef.current) {
+        posRef.current += direction === 'up' ? -speed : speed;
+        if (direction === 'up' && posRef.current <= -halfH()) posRef.current = 0;
+        if (direction === 'down' && posRef.current >= 0) posRef.current = -halfH();
+        track.style.transform = `translateY(${posRef.current}px)`;
+      }
+      animRef.current = requestAnimationFrame(animate);
+    };
+    animRef.current = requestAnimationFrame(animate);
+    return () => { if (animRef.current) cancelAnimationFrame(animRef.current); };
+  }, [clients, direction]);
+
+  const displayClients = Array(30).fill(clients).flat();
+  const initials = (name: string) => name.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
+  function nameToGradient(str: string) {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) hash = str.charCodeAt(i) + ((hash << 5) - hash);
+    const h1 = Math.abs(hash % 360);
+    return `linear-gradient(135deg, hsl(${h1},70%,55%), hsl(${(h1 + 40) % 360},80%,45%))`;
+  }
+
+  if (clients.length === 0) return null;
+
+  const posStyle: React.CSSProperties = side === 'left'
+    ? { left: 0, top: 0, bottom: 0 }
+    : { right: 0, top: 0, bottom: 0 };
+
+  return (
+    <div
+      className="absolute hidden xl:flex flex-col items-center overflow-hidden pointer-events-none z-20"
+      style={{
+        ...posStyle,
+        width: '155px',
+        maskImage: 'linear-gradient(to bottom, transparent 0%, black 12%, black 88%, transparent 100%)',
+        WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 12%, black 88%, transparent 100%)',
+      }}
+      onMouseEnter={() => { isPausedRef.current = true; }}
+      onMouseLeave={() => { isPausedRef.current = false; }}
+    >
+      <div ref={trackRef} className="flex flex-col gap-4 py-4 will-change-transform pointer-events-auto px-3">
+        {displayClients.map((c, i) => (
+          <div
+            key={`${c.id}-${i}`}
+            title={c.name}
+            className="shrink-0 rounded-2xl flex flex-col items-center justify-center gap-2 cursor-default"
+            style={{
+              width: '125px',
+              height: '135px',
+              background: 'rgba(0,18,40,0.75)',
+              border: '1px solid rgba(0,212,255,0.22)',
+              backdropFilter: 'blur(16px)',
+              boxShadow: '0 4px 20px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.06)',
+              transition: 'all 0.3s ease',
+            }}
+            onMouseEnter={e => {
+              const el = e.currentTarget as HTMLElement;
+              el.style.border = '1px solid rgba(0,212,255,0.65)';
+              el.style.background = 'rgba(0,212,255,0.13)';
+              el.style.transform = 'scale(1.1)';
+              el.style.boxShadow = '0 8px 32px rgba(0,212,255,0.28), inset 0 1px 0 rgba(255,255,255,0.1)';
+            }}
+            onMouseLeave={e => {
+              const el = e.currentTarget as HTMLElement;
+              el.style.border = '1px solid rgba(0,212,255,0.22)';
+              el.style.background = 'rgba(0,18,40,0.75)';
+              el.style.transform = 'scale(1)';
+              el.style.boxShadow = '0 4px 20px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.06)';
+            }}
+          >
+            {c.logo_url ? (
+              <img
+                src={c.logo_url}
+                alt={c.name}
+                className="w-16 h-16 object-contain rounded-xl"
+                onError={e => {
+                  (e.currentTarget as HTMLImageElement).style.display = 'none';
+                  (e.currentTarget.nextElementSibling as HTMLElement).style.display = 'flex';
+                }}
+              />
+            ) : null}
+            <div
+              className="w-16 h-16 rounded-xl flex items-center justify-center text-white font-bold text-xl font-heading"
+              style={{ background: nameToGradient(c.name), display: c.logo_url ? 'none' : 'flex' }}
+            >
+              {initials(c.name)}
+            </div>
+            <span
+              className="text-[10px] font-semibold text-center leading-tight px-2 w-full"
+              style={{
+                color: 'rgba(180,220,255,0.9)',
+                overflow: 'hidden',
+                display: '-webkit-box',
+                WebkitLineClamp: 2,
+                WebkitBoxOrient: 'vertical',
+              } as React.CSSProperties}
+            >
+              {c.name}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -248,13 +271,11 @@ export default function Home() {
 
       {/* ═══════════════════════════════════════════ HERO ══════════════════════════════════════ */}
       <section className="relative min-h-screen flex items-center justify-center overflow-hidden" style={{ background: 'linear-gradient(180deg, #000f20 0%, #011628 50%, #030D1A 100%)' }}>
-        {/* Left vertical client strip */}
-        <VerticalClientStrip direction="up" />
+        {/* Left vertical client strip - slides UP */}
+        <VerticalClientStrip direction="up" side="left" />
 
-        {/* Right vertical client strip (opposite direction) */}
-        <div style={{ right: 0 }} className="absolute inset-y-0 right-0">
-          <VerticalClientStrip direction="down" />
-        </div>
+        {/* Right vertical client strip - slides DOWN */}
+        <VerticalClientStrip direction="down" side="right" />
 
         {/* Background photo with heavy overlay */}
         <img
