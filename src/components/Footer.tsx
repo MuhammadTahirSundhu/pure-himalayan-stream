@@ -112,7 +112,7 @@ export default function Footer() {
             <div className="flex flex-col gap-3">
               {[
                 { icon: Phone,  href: 'tel:+923203133140',        text: '0320 313 3140' },
-                { icon: Mail,   href: 'mailto:info@onewater.pk',  text: 'info@onewater.pk' },
+                { icon: Mail,   href: 'mailto:onewater.pk@gmail.com',  text: 'onewater.pk@gmail.com' },
               ].map((item, i) => (
                 <a
                   key={i}
@@ -139,7 +139,7 @@ export default function Footer() {
           className="mt-12 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-sm"
           style={{ borderTop: '1px solid rgba(0,212,255,0.10)', color: 'rgba(100,160,210,0.5)' }}
         >
-          <p>© {new Date().getFullYear()} One Water Pakistan. All rights reserved. PSQCA Certified.</p>
+          <p>© {new Date().getFullYear()} One Water Pakistan. All rights reserved.</p>
           <div className="flex items-center gap-1" style={{ color: CYAN, opacity: 0.6 }}>
             <Droplets className="w-3 h-3" />
             <span className="text-xs">Pure · Transparent · Pakistani</span>

@@ -92,6 +92,6 @@ export const purificationSteps = [
   { step: 6, title: 'UV Sterilization', description: 'Destroys bacteria and viruses without chemicals' },
   { step: 7, title: 'Ozonation', description: 'Final disinfection ensuring absolute purity' },
   { step: 8, title: 'Micron Filtration', description: '0.2 micron filter for ultra-fine purification' },
-  { step: 9, title: 'Quality Testing', description: 'PSQCA-certified lab testing every batch' },
+  { step: 9, title: 'Quality Testing', description: 'Multi-parameter lab testing performed on every batch' },
   { step: 10, title: 'Sealed Bottling', description: 'Automated hygienic bottling in sterile environment' },
 ];
