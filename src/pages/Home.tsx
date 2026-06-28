@@ -320,7 +320,7 @@ export default function Home() {
           >
             <Mountain className="w-4 h-4" style={{ color: '#00d4ff' }} />
             <span className="text-sm font-semibold tracking-wide" style={{ color: '#00d4ff' }}>
-              Provide quality drinking water
+              "Quality is our Identity" - One Water Pakistan
             </span>
           </div>
 
