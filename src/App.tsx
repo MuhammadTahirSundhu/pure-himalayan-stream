@@ -23,14 +23,21 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
-const CustomerLayout = ({ children }: { children: React.ReactNode }) => (
-  <>
-    <Navbar />
-    <main className="min-h-screen">{children}</main>
-    <Footer />
-    <CartSidebar />
-  </>
-);
+import { useLocation } from "react-router-dom";
+
+const CustomerLayout = ({ children }: { children: React.ReactNode }) => {
+  const location = useLocation();
+  const isHome = location.pathname === '/';
+  
+  return (
+    <>
+      <Navbar />
+      <main className={`min-h-screen ${!isHome ? 'pt-16' : ''}`}>{children}</main>
+      <Footer />
+      <CartSidebar />
+    </>
+  );
+};
 
 const App = () => (
   <QueryClientProvider client={queryClient}>

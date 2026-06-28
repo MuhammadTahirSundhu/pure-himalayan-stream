@@ -33,11 +33,11 @@ export default function Navbar() {
 
   return (
     <nav
-      className="sticky top-0 z-50 transition-all duration-300"
+      className="fixed w-full top-0 z-50 transition-all duration-300"
       style={{
-        background: scrolled ? 'rgba(3,13,26,0.95)' : 'rgba(3,13,26,0.7)',
-        backdropFilter: 'blur(20px)',
-        borderBottom: `1px solid ${scrolled ? 'rgba(0,212,255,0.18)' : 'rgba(0,212,255,0.08)'}`,
+        background: scrolled ? 'rgba(3,13,26,0.95)' : 'transparent',
+        backdropFilter: scrolled ? 'blur(20px)' : 'none',
+        borderBottom: `1px solid ${scrolled ? 'rgba(0,212,255,0.18)' : 'transparent'}`,
         boxShadow: scrolled ? '0 4px 30px rgba(0,0,0,0.4)' : 'none',
       }}
     >

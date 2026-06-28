@@ -11,6 +11,7 @@ import { useProducts } from '@/hooks/useProducts';
 import ProductCard from '@/components/ProductCard';
 import ClientsMarquee from '@/components/ClientsMarquee';
 import heroBg from '@/assets/brand/hero-bg.jpg';
+import brandLogo from '@/assets/media/2.jpeg';
 
 // ─── Floating Orb ─────────────────────────────────────────────────────────────
 function FloatingOrb({ size, x, y, delay, duration, opacity = 0.15 }: {
@@ -98,142 +99,16 @@ function HexGrid() {
   );
 }
 
-// ─── Vertical Tank-Chain Strip ────────────────────────────────────────────────
-function VerticalClientStrip({ direction = 'up', side = 'left' }: { direction?: 'up' | 'down'; side?: 'left' | 'right' }) {
-  const [clients, setClients] = useState<Array<{ id: string; name: string; logo_url: string | null }>>([]);
-  const trackRef = useRef<HTMLDivElement>(null);
-  const posRef = useRef(0);
-  const animRef = useRef<number | null>(null);
-  const isPausedRef = useRef(false);
-
-  useEffect(() => {
-    fetch('/api/clients')
-      .then(r => r.json())
-      .then(data => setClients(Array.isArray(data) ? data : []))
-      .catch(() => {});
-  }, []);
-
-  useEffect(() => {
-    if (clients.length === 0) return;
-    const track = trackRef.current;
-    if (!track) return;
-    const speed = 0.6;
-    const halfH = () => track.scrollHeight / 2;
-    posRef.current = direction === 'up' ? 0 : -halfH();
-
-    const animate = () => {
-      if (!isPausedRef.current) {
-        posRef.current += direction === 'up' ? -speed : speed;
-        if (direction === 'up' && posRef.current <= -halfH()) posRef.current = 0;
-        if (direction === 'down' && posRef.current >= 0) posRef.current = -halfH();
-        track.style.transform = `translateY(${posRef.current}px)`;
-      }
-      animRef.current = requestAnimationFrame(animate);
-    };
-    animRef.current = requestAnimationFrame(animate);
-    return () => { if (animRef.current) cancelAnimationFrame(animRef.current); };
-  }, [clients, direction]);
-
-  const displayClients = Array(30).fill(clients).flat();
-  const initials = (name: string) => name.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
-  function nameToGradient(str: string) {
-    let hash = 0;
-    for (let i = 0; i < str.length; i++) hash = str.charCodeAt(i) + ((hash << 5) - hash);
-    const h1 = Math.abs(hash % 360);
-    return `linear-gradient(135deg, hsl(${h1},70%,55%), hsl(${(h1 + 40) % 360},80%,45%))`;
-  }
-
-  if (clients.length === 0) return null;
-
-  const posStyle: React.CSSProperties = side === 'left'
-    ? { left: 0, top: 0, bottom: 0 }
-    : { right: 0, top: 0, bottom: 0 };
-
-  return (
-    <div
-      className="absolute flex flex-col items-center overflow-hidden pointer-events-none z-20 w-[75px] md:w-[110px] xl:w-[155px]"
-      style={{
-        ...posStyle,
-        maskImage: 'linear-gradient(to bottom, transparent 0%, black 12%, black 88%, transparent 100%)',
-        WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 12%, black 88%, transparent 100%)',
-      }}
-      onMouseEnter={() => { isPausedRef.current = true; }}
-      onMouseLeave={() => { isPausedRef.current = false; }}
-    >
-      <div ref={trackRef} className="flex flex-col gap-2 md:gap-3 xl:gap-4 py-4 will-change-transform pointer-events-auto px-1 md:px-2 xl:px-3">
-        {displayClients.map((c, i) => (
-          <div
-            key={`${c.id}-${i}`}
-            title={c.name}
-            className="shrink-0 rounded-xl xl:rounded-2xl flex flex-col items-center justify-center gap-1 xl:gap-2 cursor-default w-[65px] h-[75px] md:w-[95px] md:h-[105px] xl:w-[125px] xl:h-[135px]"
-            style={{
-              background: 'rgba(0,18,40,0.75)',
-              border: '1px solid rgba(0,212,255,0.22)',
-              backdropFilter: 'blur(16px)',
-              boxShadow: '0 4px 20px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.06)',
-              transition: 'all 0.3s ease',
-            }}
-            onMouseEnter={e => {
-              const el = e.currentTarget as HTMLElement;
-              el.style.border = '1px solid rgba(0,212,255,0.65)';
-              el.style.background = 'rgba(0,212,255,0.13)';
-              el.style.transform = 'scale(1.1)';
-              el.style.boxShadow = '0 8px 32px rgba(0,212,255,0.28), inset 0 1px 0 rgba(255,255,255,0.1)';
-            }}
-            onMouseLeave={e => {
-              const el = e.currentTarget as HTMLElement;
-              el.style.border = '1px solid rgba(0,212,255,0.22)';
-              el.style.background = 'rgba(0,18,40,0.75)';
-              el.style.transform = 'scale(1)';
-              el.style.boxShadow = '0 4px 20px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.06)';
-            }}
-          >
-            {c.logo_url ? (
-              <img
-                src={c.logo_url}
-                alt={c.name}
-                className="w-8 h-8 md:w-12 md:h-12 xl:w-16 xl:h-16 object-contain rounded-lg xl:rounded-xl"
-                onError={e => {
-                  (e.currentTarget as HTMLImageElement).style.display = 'none';
-                  (e.currentTarget.nextElementSibling as HTMLElement).style.display = 'flex';
-                }}
-              />
-            ) : null}
-            <div
-              className="w-8 h-8 md:w-12 md:h-12 xl:w-16 xl:h-16 rounded-lg xl:rounded-xl flex items-center justify-center text-white font-bold text-sm md:text-lg xl:text-xl font-heading"
-              style={{ background: nameToGradient(c.name), display: c.logo_url ? 'none' : 'flex' }}
-            >
-              {initials(c.name)}
-            </div>
-            <span
-              className="text-[7px] md:text-[9px] xl:text-[10px] font-semibold text-center leading-tight px-1 xl:px-2 w-full"
-              style={{
-                color: 'rgba(180,220,255,0.9)',
-                overflow: 'hidden',
-                display: '-webkit-box',
-                WebkitLineClamp: 2,
-                WebkitBoxOrient: 'vertical',
-              } as React.CSSProperties}
-            >
-              {c.name}
-            </span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 // ─── Main Component ────────────────────────────────────────────────────────────
 export default function Home() {
   const autoplay = useRef(Autoplay({ delay: 3500, stopOnInteraction: false, stopOnMouseEnter: true }));
   const { data: products, isLoading } = useProducts();
 
   const stats = [
-    { icon: Droplets,    value: 99.9,   suffix: '%', label: 'Purity Level',       color: 'from-cyan-400 to-cyan-600' },
-    { icon: Mountain,    value: 5000,   suffix: 'm+', label: 'Himalayan Altitude', color: 'from-sky-400 to-sky-600' },
-    { icon: FlaskConical,value: 47,     suffix: '+',  label: 'Lab Tests Passed',   color: 'from-blue-400 to-blue-600' },
-    { icon: Truck,       value: 50,     suffix: '+',  label: 'Cities Covered',     color: 'from-indigo-400 to-indigo-600' },
+    { icon: Droplets, value: 99.9, suffix: '%', label: 'Purity Level', color: 'from-cyan-400 to-cyan-600' },
+    { icon: Mountain, value: 5000, suffix: 'm+', label: 'Himalayan Altitude', color: 'from-sky-400 to-sky-600' },
+    { icon: FlaskConical, value: 47, suffix: '+', label: 'Lab Tests Passed', color: 'from-blue-400 to-blue-600' },
+    { icon: Truck, value: 50, suffix: '+', label: 'Cities Covered', color: 'from-indigo-400 to-indigo-600' },
   ];
 
   const features = [
@@ -258,7 +133,7 @@ export default function Home() {
     {
       icon: Star, color: 'from-violet-500/20 to-violet-600/5', border: 'border-violet-500/30',
       iconColor: 'text-violet-400',
-      title: 'ISO 9001:2015 Certified',
+      title: 'HMCA - Halal Montreal Certification Authority Certified',
       desc: 'Our entire production process meets international quality management standards.',
     },
   ];
@@ -268,12 +143,6 @@ export default function Home() {
 
       {/* ═══════════════════════════════════════════ HERO ══════════════════════════════════════ */}
       <section className="relative min-h-screen flex items-center justify-center overflow-hidden" style={{ background: 'linear-gradient(180deg, #000f20 0%, #011628 50%, #030D1A 100%)' }}>
-        {/* Left vertical client strip - slides UP */}
-        <VerticalClientStrip direction="up" side="left" />
-
-        {/* Right vertical client strip - slides DOWN */}
-        <VerticalClientStrip direction="down" side="right" />
-
         {/* Background video with overlay */}
         <video
           src="/hero_loop.mp4"
@@ -282,17 +151,17 @@ export default function Home() {
           muted
           playsInline
           className="absolute inset-0 w-full h-full object-cover"
-          style={{ opacity: 0.4 }}
+          style={{ opacity: 0.75 }}
         />
 
         {/* Hex grid */}
         <HexGrid />
 
         {/* Floating glowing orbs */}
-        <FloatingOrb size={500} x="60%" y="-10%" delay={0}   duration={8}  opacity={0.12} />
-        <FloatingOrb size={300} x="10%" y="30%" delay={2}   duration={10} opacity={0.10} />
-        <FloatingOrb size={200} x="75%" y="60%" delay={1}   duration={7}  opacity={0.14} />
-        <FloatingOrb size={150} x="30%" y="70%" delay={3}   duration={9}  opacity={0.08} />
+        <FloatingOrb size={500} x="60%" y="-10%" delay={0} duration={8} opacity={0.12} />
+        <FloatingOrb size={300} x="10%" y="30%" delay={2} duration={10} opacity={0.10} />
+        <FloatingOrb size={200} x="75%" y="60%" delay={1} duration={7} opacity={0.14} />
+        <FloatingOrb size={150} x="30%" y="70%" delay={3} duration={9} opacity={0.08} />
 
         {/* Radial glow behind text */}
         <div
@@ -305,118 +174,119 @@ export default function Home() {
           }}
         />
 
-        {/* Content */}
-        <div className="relative z-10 container mx-auto px-4 text-center py-24">
-
-          {/* Badge */}
+        {/* Absolute Top-Left Branded Slogan */}
+        <div className="absolute top-24 left-4 lg:left-8 z-30">
           <div
-            className="inline-flex items-center gap-2 px-5 py-2 rounded-full mb-8"
-            style={{
-              background: 'rgba(0,212,255,0.08)',
-              border: '1px solid rgba(0,212,255,0.3)',
-              backdropFilter: 'blur(12px)',
-              animation: 'fadeSlideDown 0.8s ease forwards',
-            }}
+            className="inline-flex flex-col items-center text-center gap-1 sm:gap-2"
+            style={{ animation: 'fadeSlideDown 0.8s ease forwards' }}
           >
-            <Mountain className="w-4 h-4" style={{ color: '#00d4ff' }} />
-            <span className="text-sm font-semibold tracking-wide" style={{ color: '#00d4ff' }}>
-              "Quality is our Identity" - One Water Pakistan
-            </span>
-          </div>
-
-          {/* Headline */}
-          <div style={{ animation: 'fadeSlideDown 0.8s ease 0.15s forwards', opacity: 0 }}>
-            <h1
-              className="font-heading font-black leading-none mb-6"
-              style={{
-                fontSize: 'clamp(3rem, 9vw, 7rem)',
-                color: '#fff',
-                textShadow: '0 0 80px rgba(0,212,255,0.3)',
-              }}
-            >
-              Pure.{' '}
-              <span
-                style={{
-                  background: 'linear-gradient(135deg, #00d4ff 0%, #0ea5e9 50%, #3b82f6 100%)',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                  backgroundClip: 'text',
-                  filter: 'drop-shadow(0 0 30px rgba(0,212,255,0.5))',
-                }}
-              >
-                Transparent.
+            <div className="w-12 h-12 sm:w-16 sm:h-16 shrink-0">
+              <img src={brandLogo} alt="One Water Pakistan" className="w-full h-full object-contain" />
+            </div>
+            <div className="flex flex-col items-center">
+              <span className="text-[9px] sm:text-[10px] md:text-xs font-medium tracking-[0.1em] uppercase" style={{ color: 'rgba(255,255,255,0.9)', textShadow: '0 2px 4px rgba(0,0,0,0.8)' }}>
+                One Water Pakistan
               </span>
-              <br />
-              Pakistani.
-            </h1>
-          </div>
-
-          {/* Subtext */}
-          <div style={{ animation: 'fadeSlideDown 0.8s ease 0.3s forwards', opacity: 0 }}>
-            <p
-              className="text-lg sm:text-xl max-w-2xl mx-auto mb-10 leading-relaxed"
-              style={{ color: 'rgba(200,230,255,0.75)' }}
-            >
-              Premium Himalayan mineral water — naturally filtered through ancient glaciers
-              over thousands of years, lab-certified, and delivered fresh to your doorstep.
-            </p>
-          </div>
-
-          {/* CTA Buttons */}
-          <div
-            className="flex flex-wrap items-center justify-center gap-4"
-            style={{ animation: 'fadeSlideDown 0.8s ease 0.45s forwards', opacity: 0 }}
-          >
-            <Link
-              to="/products"
-              className="group inline-flex items-center gap-2 px-8 py-4 rounded-full font-bold text-lg text-white transition-all duration-300"
-              style={{
-                background: 'linear-gradient(135deg, #00d4ff, #0284c7)',
-                boxShadow: '0 0 30px rgba(0,212,255,0.4), 0 4px 20px rgba(0,0,0,0.4)',
-              }}
-              onMouseEnter={e => (e.currentTarget.style.boxShadow = '0 0 50px rgba(0,212,255,0.7), 0 4px 30px rgba(0,0,0,0.5)')}
-              onMouseLeave={e => (e.currentTarget.style.boxShadow = '0 0 30px rgba(0,212,255,0.4), 0 4px 20px rgba(0,0,0,0.4)')}
-            >
-              Order Now
-              <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-            </Link>
-
-            <Link
-              to="/quality"
-              className="inline-flex items-center gap-2 px-8 py-4 rounded-full font-semibold text-lg transition-all duration-300"
-              style={{
-                background: 'rgba(0,212,255,0.08)',
-                border: '1px solid rgba(0,212,255,0.35)',
-                color: '#00d4ff',
-                backdropFilter: 'blur(8px)',
-              }}
-              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(0,212,255,0.16)'; }}
-              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(0,212,255,0.08)'; }}
-            >
-              <Play className="w-4 h-4" />
-              View Lab Reports
-            </Link>
-          </div>
-
-          {/* Scroll indicator */}
-          <div
-            className="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2"
-            style={{ animation: 'fadeIn 1s ease 1s forwards', opacity: 0 }}
-          >
-            <span className="text-xs tracking-widest uppercase" style={{ color: 'rgba(0,212,255,0.5)' }}>Scroll</span>
-            <div
-              className="w-px h-12 rounded-full"
-              style={{ background: 'linear-gradient(to bottom, rgba(0,212,255,0.6), transparent)', animation: 'pulse 2s ease infinite' }}
-            />
+              <span className="text-[11px] sm:text-xs md:text-sm font-bold tracking-wide mt-0.5 sm:mt-1" style={{ color: '#00d4ff', textShadow: '0 0 15px rgba(0,212,255,0.6), 0 2px 4px rgba(0,0,0,0.8)' }}>
+                "Quality is our Identity"
+              </span>
+            </div>
           </div>
         </div>
 
+        {/* Content */}
+        <div className="relative z-10 container mx-auto px-4 text-center pt-28 pb-6 flex flex-col min-h-screen">
+          
+          {/* Top/Center content (Badge & Headline) */}
+          <div className="flex-1 flex flex-col justify-center items-center">
+            {/* Headline */}
+            <div style={{ animation: 'fadeSlideDown 0.8s ease 0.15s forwards', opacity: 0 }}>
+              <h1
+                className="font-heading font-black leading-none mb-6"
+                style={{
+                  color: '#fff',
+                  fontSize: 'clamp(2rem, 5vw, 4.5rem)',
+                  textShadow: '0 0 80px rgba(0,212,255,0.3)',
+                }}
+              >
+                Pure.{' '}
+                <span
+                  style={{
+                    background: 'linear-gradient(135deg, #00d4ff 0%, #0ea5e9 50%, #3b82f6 100%)',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                    backgroundClip: 'text',
+                    filter: 'drop-shadow(0 0 30px rgba(0,212,255,0.5))',
+                  }}
+                >
+                  Transparent.
+                </span>
+                <br />
+                Pakistani.
+              </h1>
+            </div>
+          </div>
+
+          {/* Bottom content (CTA & Subtext) */}
+          <div className="mt-auto pt-6">
+            {/* CTA Buttons */}
+            <div
+              className="flex flex-wrap items-center justify-center gap-4"
+              style={{ animation: 'fadeSlideDown 0.8s ease 0.45s forwards', opacity: 0 }}
+            >
+              <Link
+                to="/products"
+                className="group inline-flex items-center gap-2 px-6 py-3 text-base sm:px-8 sm:py-4 rounded-full font-bold sm:text-lg text-white transition-all duration-300"
+                style={{
+                  background: 'linear-gradient(135deg, #00d4ff, #0284c7)',
+                  boxShadow: '0 0 30px rgba(0,212,255,0.4), 0 4px 20px rgba(0,0,0,0.4)',
+                }}
+                onMouseEnter={e => (e.currentTarget.style.boxShadow = '0 0 50px rgba(0,212,255,0.7), 0 4px 30px rgba(0,0,0,0.5)')}
+                onMouseLeave={e => (e.currentTarget.style.boxShadow = '0 0 30px rgba(0,212,255,0.4), 0 4px 20px rgba(0,0,0,0.4)')}
+              >
+                Order Now
+                <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+              </Link>
+
+              <Link
+                to="/quality"
+                className="inline-flex items-center gap-2 px-6 py-3 text-base sm:px-8 sm:py-4 rounded-full font-semibold sm:text-lg transition-all duration-300"
+                style={{
+                  background: 'rgba(0,212,255,0.08)',
+                  border: '1px solid rgba(0,212,255,0.35)',
+                  color: '#00d4ff',
+                  backdropFilter: 'blur(8px)',
+                }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(0,212,255,0.16)'; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(0,212,255,0.08)'; }}
+              >
+                <Play className="w-4 h-4" />
+                View Lab Reports
+              </Link>
+            </div>
+
+            {/* Subtext */}
+            <div className="mt-6" style={{ animation: 'fadeSlideDown 0.8s ease 0.3s forwards', opacity: 0 }}>
+              <p
+                className="text-base sm:text-lg max-w-2xl mx-auto leading-relaxed"
+                style={{ color: 'rgba(200,230,255,0.75)' }}
+              >
+                Premium Himalayan mineral water — naturally filtered through ancient glaciers
+                over thousands of years, lab-certified, and delivered fresh to your doorstep.
+              </p>
+            </div>
+          </div>
+        </div>
+          
         {/* Bottom fade */}
         <div
           className="absolute bottom-0 left-0 right-0 h-32 pointer-events-none"
           style={{ background: 'linear-gradient(to bottom, transparent, #030D1A)' }}
         />
       </section>
+
+      {/* ═══════════════════════════════════════════ FEATURED CLIENTS ═══════════════════════════ */}
+      <ClientsMarquee />
 
       {/* ═══════════════════════════════════════════ STATS ═════════════════════════════════════ */}
       <section className="py-16 relative" style={{ background: '#030D1A' }}>
