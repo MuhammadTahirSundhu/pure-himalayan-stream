@@ -49,13 +49,13 @@ function ClientCard({ client }: { client: Client }) {
       }}
     >
       {/* Logo or avatar */}
-      <div className="w-20 h-20 md:w-28 md:h-28 rounded-2xl overflow-hidden flex items-center justify-center shrink-0"
-        style={{ border: '1px solid rgba(0,212,255,0.2)' }}>
+      <div className="w-32 h-32 md:w-48 md:h-48 lg:w-56 lg:h-56 rounded-2xl md:rounded-3xl overflow-hidden flex items-center justify-center shrink-0"
+        style={{ border: '1px solid rgba(0,212,255,0.2)', background: 'rgba(255,255,255,0.02)' }}>
         {client.logo_url ? (
           <img
             src={client.logo_url}
             alt={client.name}
-            className="w-full h-full object-contain p-2"
+            className="w-full h-full object-contain p-3 md:p-6"
             onError={(e) => {
               (e.currentTarget as HTMLImageElement).style.display = 'none';
               (e.currentTarget.nextElementSibling as HTMLElement).style.display = 'flex';
@@ -63,17 +63,17 @@ function ClientCard({ client }: { client: Client }) {
           />
         ) : null}
         <div
-          className="w-full h-full flex items-center justify-center text-white font-heading font-bold text-2xl md:text-3xl"
+          className="w-full h-full flex items-center justify-center text-white font-heading font-bold text-4xl md:text-6xl"
           style={{
             background: stringToGradient(client.name),
             display: client.logo_url ? 'none' : 'flex',
           }}
         >
-          {initials || <Building2 className="w-10 h-10 md:w-12 md:h-12" />}
+          {initials || <Building2 className="w-16 h-16 md:w-24 md:h-24" />}
         </div>
       </div>
       {/* Client name */}
-      <span className="text-base md:text-xl font-semibold text-center leading-tight whitespace-nowrap max-w-[220px] md:max-w-[280px] overflow-hidden text-ellipsis transition-colors"
+      <span className="text-lg md:text-2xl font-semibold text-center leading-tight transition-colors w-full px-2"
         style={{ color: 'rgba(200,230,255,0.9)' }}>
         {client.name}
       </span>
@@ -95,8 +95,8 @@ function ClientCard({ client }: { client: Client }) {
 function ClientCardSkeleton() {
   return (
     <div className="flex flex-col items-center justify-center gap-4 md:gap-6 px-10 py-8 md:px-12 md:py-10 mx-4 min-w-[280px] md:min-w-[320px] lg:min-w-[380px] rounded-3xl border border-border/40 bg-card/60 animate-pulse">
-      <div className="w-20 h-20 md:w-28 md:h-28 rounded-2xl bg-muted" />
-      <div className="h-5 bg-muted rounded w-32 md:w-48" />
+      <div className="w-32 h-32 md:w-48 md:h-48 lg:w-56 lg:h-56 rounded-2xl md:rounded-3xl bg-muted" />
+      <div className="h-6 md:h-8 bg-muted rounded w-48 md:w-64" />
     </div>
   );
 }
