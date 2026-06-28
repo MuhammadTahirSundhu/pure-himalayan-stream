@@ -29,7 +29,7 @@ function ClientCard({ client }: { client: Client }) {
 
   const content = (
     <div
-      className="group flex flex-col items-center justify-center gap-3 px-8 py-5 mx-3 min-w-[160px] rounded-2xl cursor-pointer select-none transition-all duration-400"
+      className="group flex flex-col items-center justify-center gap-4 md:gap-6 px-10 py-8 md:px-12 md:py-10 mx-4 min-w-[280px] md:min-w-[320px] lg:min-w-[380px] rounded-3xl cursor-pointer select-none transition-all duration-400"
       style={{
         background: 'rgba(255,255,255,0.04)',
         border: '1px solid rgba(0,212,255,0.12)',
@@ -38,8 +38,8 @@ function ClientCard({ client }: { client: Client }) {
       onMouseEnter={e => {
         (e.currentTarget as HTMLElement).style.border = '1px solid rgba(0,212,255,0.4)';
         (e.currentTarget as HTMLElement).style.background = 'rgba(0,212,255,0.08)';
-        (e.currentTarget as HTMLElement).style.transform = 'translateY(-4px)';
-        (e.currentTarget as HTMLElement).style.boxShadow = '0 8px 30px rgba(0,212,255,0.15)';
+        (e.currentTarget as HTMLElement).style.transform = 'translateY(-6px)';
+        (e.currentTarget as HTMLElement).style.boxShadow = '0 12px 40px rgba(0,212,255,0.2)';
       }}
       onMouseLeave={e => {
         (e.currentTarget as HTMLElement).style.border = '1px solid rgba(0,212,255,0.12)';
@@ -49,13 +49,13 @@ function ClientCard({ client }: { client: Client }) {
       }}
     >
       {/* Logo or avatar */}
-      <div className="w-14 h-14 rounded-xl overflow-hidden flex items-center justify-center shrink-0"
+      <div className="w-20 h-20 md:w-28 md:h-28 rounded-2xl overflow-hidden flex items-center justify-center shrink-0"
         style={{ border: '1px solid rgba(0,212,255,0.2)' }}>
         {client.logo_url ? (
           <img
             src={client.logo_url}
             alt={client.name}
-            className="w-full h-full object-contain"
+            className="w-full h-full object-contain p-2"
             onError={(e) => {
               (e.currentTarget as HTMLImageElement).style.display = 'none';
               (e.currentTarget.nextElementSibling as HTMLElement).style.display = 'flex';
@@ -63,17 +63,17 @@ function ClientCard({ client }: { client: Client }) {
           />
         ) : null}
         <div
-          className="w-full h-full flex items-center justify-center text-white font-heading font-bold text-lg"
+          className="w-full h-full flex items-center justify-center text-white font-heading font-bold text-2xl md:text-3xl"
           style={{
             background: stringToGradient(client.name),
             display: client.logo_url ? 'none' : 'flex',
           }}
         >
-          {initials || <Building2 className="w-6 h-6" />}
+          {initials || <Building2 className="w-10 h-10 md:w-12 md:h-12" />}
         </div>
       </div>
       {/* Client name */}
-      <span className="text-sm font-semibold text-center leading-tight whitespace-nowrap max-w-[130px] overflow-hidden text-ellipsis transition-colors"
+      <span className="text-base md:text-xl font-semibold text-center leading-tight whitespace-nowrap max-w-[220px] md:max-w-[280px] overflow-hidden text-ellipsis transition-colors"
         style={{ color: 'rgba(200,230,255,0.9)' }}>
         {client.name}
       </span>
@@ -94,9 +94,9 @@ function ClientCard({ client }: { client: Client }) {
 // Placeholder cards shown while loading
 function ClientCardSkeleton() {
   return (
-    <div className="flex flex-col items-center justify-center gap-3 px-8 py-5 mx-3 min-w-[160px] rounded-2xl border border-border/40 bg-card/60 animate-pulse">
-      <div className="w-14 h-14 rounded-xl bg-muted" />
-      <div className="h-3 bg-muted rounded w-20" />
+    <div className="flex flex-col items-center justify-center gap-4 md:gap-6 px-10 py-8 md:px-12 md:py-10 mx-4 min-w-[280px] md:min-w-[320px] lg:min-w-[380px] rounded-3xl border border-border/40 bg-card/60 animate-pulse">
+      <div className="w-20 h-20 md:w-28 md:h-28 rounded-2xl bg-muted" />
+      <div className="h-5 bg-muted rounded w-32 md:w-48" />
     </div>
   );
 }
