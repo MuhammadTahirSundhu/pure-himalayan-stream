@@ -151,25 +151,22 @@ function VerticalClientStrip({ direction = 'up', side = 'left' }: { direction?: 
 
   return (
     <div
-      className="absolute hidden xl:flex flex-col items-center overflow-hidden pointer-events-none z-20"
+      className="absolute flex flex-col items-center overflow-hidden pointer-events-none z-20 w-[75px] md:w-[110px] xl:w-[155px]"
       style={{
         ...posStyle,
-        width: '155px',
         maskImage: 'linear-gradient(to bottom, transparent 0%, black 12%, black 88%, transparent 100%)',
         WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 12%, black 88%, transparent 100%)',
       }}
       onMouseEnter={() => { isPausedRef.current = true; }}
       onMouseLeave={() => { isPausedRef.current = false; }}
     >
-      <div ref={trackRef} className="flex flex-col gap-4 py-4 will-change-transform pointer-events-auto px-3">
+      <div ref={trackRef} className="flex flex-col gap-2 md:gap-3 xl:gap-4 py-4 will-change-transform pointer-events-auto px-1 md:px-2 xl:px-3">
         {displayClients.map((c, i) => (
           <div
             key={`${c.id}-${i}`}
             title={c.name}
-            className="shrink-0 rounded-2xl flex flex-col items-center justify-center gap-2 cursor-default"
+            className="shrink-0 rounded-xl xl:rounded-2xl flex flex-col items-center justify-center gap-1 xl:gap-2 cursor-default w-[65px] h-[75px] md:w-[95px] md:h-[105px] xl:w-[125px] xl:h-[135px]"
             style={{
-              width: '125px',
-              height: '135px',
               background: 'rgba(0,18,40,0.75)',
               border: '1px solid rgba(0,212,255,0.22)',
               backdropFilter: 'blur(16px)',
@@ -195,7 +192,7 @@ function VerticalClientStrip({ direction = 'up', side = 'left' }: { direction?: 
               <img
                 src={c.logo_url}
                 alt={c.name}
-                className="w-16 h-16 object-contain rounded-xl"
+                className="w-8 h-8 md:w-12 md:h-12 xl:w-16 xl:h-16 object-contain rounded-lg xl:rounded-xl"
                 onError={e => {
                   (e.currentTarget as HTMLImageElement).style.display = 'none';
                   (e.currentTarget.nextElementSibling as HTMLElement).style.display = 'flex';
@@ -203,13 +200,13 @@ function VerticalClientStrip({ direction = 'up', side = 'left' }: { direction?: 
               />
             ) : null}
             <div
-              className="w-16 h-16 rounded-xl flex items-center justify-center text-white font-bold text-xl font-heading"
+              className="w-8 h-8 md:w-12 md:h-12 xl:w-16 xl:h-16 rounded-lg xl:rounded-xl flex items-center justify-center text-white font-bold text-sm md:text-lg xl:text-xl font-heading"
               style={{ background: nameToGradient(c.name), display: c.logo_url ? 'none' : 'flex' }}
             >
               {initials(c.name)}
             </div>
             <span
-              className="text-[10px] font-semibold text-center leading-tight px-2 w-full"
+              className="text-[7px] md:text-[9px] xl:text-[10px] font-semibold text-center leading-tight px-1 xl:px-2 w-full"
               style={{
                 color: 'rgba(180,220,255,0.9)',
                 overflow: 'hidden',
@@ -277,13 +274,15 @@ export default function Home() {
         {/* Right vertical client strip - slides DOWN */}
         <VerticalClientStrip direction="down" side="right" />
 
-        {/* Background photo with heavy overlay */}
-        <img
-          src={heroBg}
-          alt=""
-          aria-hidden
+        {/* Background video with overlay */}
+        <video
+          src="/hero_loop.mp4"
+          autoPlay
+          loop
+          muted
+          playsInline
           className="absolute inset-0 w-full h-full object-cover"
-          style={{ opacity: 0.18, mixBlendMode: 'luminosity' }}
+          style={{ opacity: 0.4 }}
         />
 
         {/* Hex grid */}
