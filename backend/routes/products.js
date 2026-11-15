@@ -13,7 +13,7 @@ const router = Router();
 router.get('/', async (req, res) => {
   try {
     const result = await pool.query(
-      'SELECT * FROM public.products ORDER BY price ASC'
+      'SELECT id, name, size, price, description, image_url, category, in_stock FROM public.products ORDER BY price ASC'
     );
     res.json(result.rows);
   } catch (err) {

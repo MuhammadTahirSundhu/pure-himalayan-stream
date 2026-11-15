@@ -1,182 +1,76 @@
-// routes/admin/products.js — OneWater Pakistan
-// Admin product management endpoints (GET, POST, PUT, DELETE)
-
+// routes/admin/products.js — product catalogue management
 import { Router } from 'express';
-import { body, param } from 'express-validator';
+import { body } from 'express-validator';
 import multer from 'multer';
-import { v2 as cloudinary } from 'cloudinary';
 import { validate } from '../../middleware/validate.js';
+import { asyncHandler, HttpError } from '../../lib/asyncHandler.js';
+import { uploadBuffer, imageFileFilter, IMAGE_FORMATS } from '../../lib/cloudinary.js';
 import pool from '../../db.js';
 
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key:    process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-});
-
-// Memory storage — stream directly to Cloudinary, nothing saved to disk
-const upload = multer({
-  storage: multer.memoryStorage(),
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB max
-  fileFilter: (req, file, cb) => {
-    if (file.mimetype.startsWith('image/')) cb(null, true);
-    else cb(new Error('Only image files are allowed'));
-  },
-});
-
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024, files: 1 }, fileFilter: imageFileFilter });
 const router = Router();
 
-/**
- * GET /api/admin/products
- * Returns all products for the admin panel.
- */
-router.get('/', async (req, res) => {
-  try {
-    const result = await pool.query('SELECT * FROM public.products ORDER BY price ASC');
-    res.json(result.rows);
-  } catch (err) {
-    console.error('[admin/products] GET error:', err.message);
-    res.status(500).json({ error: 'ServerError', message: 'Failed to fetch products.' });
-  }
+const uploadImage = (file) => uploadBuffer(file.buffer, {
+  folder: 'onewater/products', resource_type: 'image', allowed_formats: IMAGE_FORMATS,
+  transformation: [{ width: 800, height: 800, crop: 'limit', quality: 'auto:good' }],
 });
 
-/**
- * POST /api/admin/products
- * Creates a new product. Accepts multipart/form-data.
- * Fields: id, name, size, price, category (text) + image (file, optional)
- */
-router.post('/', upload.single('image'), async (req, res) => {
+router.get('/', asyncHandler(async (req, res) => {
+  const { rows } = await pool.query('SELECT * FROM public.products ORDER BY price ASC');
+  res.json(rows);
+}));
+
+router.post('/', upload.single('image'), asyncHandler(async (req, res) => {
   const { id, name, size, price, description, category } = req.body;
-
-  // Basic validation
-  if (!id || !name || !size || !price || !category) {
-    return res.status(400).json({ error: 'ValidationError', message: 'id, name, size, price and category are required.' });
+  if (!id?.trim() || !name?.trim() || !size?.trim() || price === undefined || price === '' || !category) {
+    throw new HttpError(400, 'ValidationError', 'id, name, size, price and category are required.');
   }
-  if (!['bottle', 'dispenser'].includes(category)) {
-    return res.status(400).json({ error: 'ValidationError', message: 'Category must be bottle or dispenser.' });
-  }
+  if (!/^[a-z0-9-]{1,40}$/i.test(id.trim())) throw new HttpError(400, 'ValidationError', 'ID may only contain letters, numbers and dashes.');
+  const p = Number(price);
+  if (!Number.isFinite(p) || p < 0) throw new HttpError(400, 'ValidationError', 'Price must be 0 or more.');
+  if (!['bottle', 'dispenser'].includes(category)) throw new HttpError(400, 'ValidationError', 'Category must be bottle or dispenser.');
 
-  let image_url = null;
-
-  // Upload to Cloudinary if an image was provided
-  if (req.file) {
-    try {
-      const uploaded = await new Promise((resolve, reject) => {
-        const stream = cloudinary.uploader.upload_stream(
-          {
-            folder: 'onewater/products',
-            resource_type: 'image',
-            allowed_formats: ['jpg', 'jpeg', 'png', 'webp', 'svg'],
-            transformation: [{ width: 800, height: 800, crop: 'limit', quality: 'auto:good' }],
-          },
-          (error, result) => {
-            if (error) reject(error);
-            else resolve(result);
-          }
-        );
-        stream.end(req.file.buffer);
-      });
-      image_url = uploaded.secure_url;
-      console.log(`[admin/products] Image uploaded to Cloudinary: ${image_url}`);
-    } catch (err) {
-      console.error('[admin/products] Cloudinary upload error:', err.message);
-      return res.status(500).json({ error: 'UploadError', message: 'Failed to upload product image.' });
-    }
-  }
-
+  const image_url = req.file ? await uploadImage(req.file) : null;
   try {
-    const result = await pool.query(
+    const { rows } = await pool.query(
       `INSERT INTO public.products (id, name, size, price, description, image_url, category, in_stock)
        VALUES ($1, $2, $3, $4, $5, $6, $7, true) RETURNING *`,
-      [id.trim(), name.trim(), size.trim(), parseFloat(price), description || null, image_url, category]
+      [id.trim(), name.trim().slice(0, 80), size.trim().slice(0, 20), p, description?.slice(0, 500) || null, image_url, category]
     );
-    console.log(`[admin/products] Created product: ${id} — ${name}`);
-    res.status(201).json({ success: true, product: result.rows[0] });
+    res.status(201).json({ success: true, product: rows[0] });
   } catch (err) {
-    console.error('[admin/products] POST error:', err.message);
-    if (err.code === '23505') {
-      return res.status(409).json({ error: 'Duplicate', message: 'A product with this ID already exists.' });
-    }
-    res.status(500).json({ error: 'ServerError', message: 'Failed to create product.' });
+    if (err.code === '23505') throw new HttpError(409, 'Duplicate', 'A product with this ID already exists.');
+    throw err;
   }
-});
+}));
 
-
-
-/**
- * PUT /api/admin/products/:id
- * Updates a product's price, stock status, or description.
- * Body: { price?, in_stock?, description?, name? }
- */
 router.put(
   '/:id',
   [
-    param('id').notEmpty(),
-    body('price').optional().isNumeric().withMessage('Price must be a number'),
-    body('in_stock').optional().isBoolean().withMessage('in_stock must be boolean'),
-    body('name').optional().trim().notEmpty().withMessage('Name cannot be empty'),
-    body('description').optional().trim(),
+    body('price').optional().isFloat({ min: 0 }).withMessage('Price must be 0 or more'),
+    body('in_stock').optional().isBoolean(),
+    body('name').optional().trim().isLength({ min: 1, max: 80 }),
+    body('description').optional().trim().isLength({ max: 500 }),
   ],
   validate,
-  async (req, res) => {
-    const { id } = req.params;
-    const { price, in_stock, description, name } = req.body;
-
-    try {
-      const fields = [];
-      const values = [];
-      let idx = 1;
-
-      if (price !== undefined)       { fields.push(`price = $${idx++}`);       values.push(price); }
-      if (in_stock !== undefined)    { fields.push(`in_stock = $${idx++}`);    values.push(in_stock); }
-      if (description !== undefined) { fields.push(`description = $${idx++}`); values.push(description); }
-      if (name !== undefined)        { fields.push(`name = $${idx++}`);        values.push(name); }
-
-      if (fields.length === 0) {
-        return res.status(400).json({ error: 'BadRequest', message: 'No fields provided to update.' });
-      }
-
-      values.push(id);
-      const result = await pool.query(
-        `UPDATE public.products SET ${fields.join(', ')} WHERE id = $${idx} RETURNING *`,
-        values
-      );
-
-      if (result.rows.length === 0) {
-        return res.status(404).json({ error: 'NotFound', message: 'Product not found.' });
-      }
-
-      console.log(`[admin/products] Product ${id} updated`);
-      res.json({ success: true, product: result.rows[0] });
-    } catch (err) {
-      console.error('[admin/products] PUT /:id error:', err.message);
-      res.status(500).json({ error: 'ServerError', message: 'Failed to update product.' });
-    }
-  }
+  asyncHandler(async (req, res) => {
+    const allowed = ['price', 'in_stock', 'description', 'name'];
+    const fields = allowed.filter((f) => req.body[f] !== undefined);
+    if (!fields.length) throw new HttpError(400, 'BadRequest', 'No fields provided to update.');
+    const sets = fields.map((f, i) => `${f} = $${i + 1}`).join(', ');
+    const { rows } = await pool.query(
+      `UPDATE public.products SET ${sets} WHERE id = $${fields.length + 1} RETURNING *`,
+      [...fields.map((f) => req.body[f]), req.params.id]
+    );
+    if (!rows.length) throw new HttpError(404, 'NotFound', 'Product not found.');
+    res.json({ success: true, product: rows[0] });
+  })
 );
 
-/**
- * DELETE /api/admin/products/:id
- * Deletes a product by ID.
- */
-router.delete(
-  '/:id',
-  [param('id').notEmpty()],
-  validate,
-  async (req, res) => {
-    const { id } = req.params;
-    try {
-      const result = await pool.query('DELETE FROM public.products WHERE id = $1 RETURNING id', [id]);
-      if (result.rows.length === 0) {
-        return res.status(404).json({ error: 'NotFound', message: 'Product not found.' });
-      }
-      console.log(`[admin/products] Product ${id} deleted`);
-      res.json({ success: true });
-    } catch (err) {
-      console.error('[admin/products] DELETE /:id error:', err.message);
-      res.status(500).json({ error: 'ServerError', message: 'Failed to delete product.' });
-    }
-  }
-);
+router.delete('/:id', asyncHandler(async (req, res) => {
+  const { rowCount } = await pool.query('DELETE FROM public.products WHERE id = $1', [req.params.id]);
+  if (!rowCount) throw new HttpError(404, 'NotFound', 'Product not found.');
+  res.json({ success: true });
+}));
 
 export default router;

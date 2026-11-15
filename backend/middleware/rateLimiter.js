@@ -1,49 +1,17 @@
 // middleware/rateLimiter.js — OneWater Pakistan
-// Rate limiting configs using express-rate-limit
-
+// Keys on the real client IP; server.js sets `trust proxy` for Vercel → Render.
 import rateLimit from 'express-rate-limit';
 
-/**
- * General API rate limiter — 120 requests per 15 minutes per IP.
- * Applied to all routes.
- */
-export const generalLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 120,
+const make = (windowMinutes, max, message) => rateLimit({
+  windowMs: windowMinutes * 60 * 1000,
+  max,
   standardHeaders: true,
   legacyHeaders: false,
-  message: {
-    error: 'TooManyRequests',
-    message: 'Too many requests from this IP, please try again after 15 minutes.',
-  },
+  message: { error: 'TooManyRequests', message },
 });
 
-/**
- * Strict limiter for admin login — 10 attempts per 15 minutes per IP.
- * Prevents brute-force attacks on the admin password.
- */
-export const loginLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 10,
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: {
-    error: 'TooManyRequests',
-    message: 'Too many login attempts. Please try again after 15 minutes.',
-  },
-});
-
-/**
- * Order submission limiter — max 20 orders per 15 minutes per IP.
- * Prevents order spam.
- */
-export const orderLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 20,
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: {
-    error: 'TooManyRequests',
-    message: 'Too many order submissions. Please slow down.',
-  },
-});
+export const generalLimiter = make(15, 300, 'Too many requests. Please try again in a few minutes.');
+export const loginLimiter   = make(15, 10, 'Too many login attempts. Please try again after 15 minutes.');
+export const orderLimiter   = make(15, 10, 'Too many orders from this connection. Please call or WhatsApp us.');
+export const uploadLimiter  = make(15, 10, 'Too many uploads. Please try again in a few minutes.');
+export const formLimiter    = make(15, 10, 'Too many submissions. Please try again later or WhatsApp us.');

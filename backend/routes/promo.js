@@ -1,48 +1,30 @@
-// routes/promo.js — OneWater Pakistan
-// Public endpoint: POST /api/promo/validate
+// routes/promo.js — POST /api/promo/validate
+// Checks a code is usable. The discount itself is applied server-side when
+// the order is priced (/api/orders/quote and /api/orders).
 
 import { Router } from 'express';
 import { body } from 'express-validator';
 import { validate } from '../middleware/validate.js';
+import { asyncHandler } from '../lib/asyncHandler.js';
+import { findUsablePromo } from '../lib/promo.js';
 import pool from '../db.js';
 
 const router = Router();
 
-/**
- * POST /api/promo/validate
- * Validates a promo code against the database.
- * Body: { code: string }
- * Returns: { valid: bool, discount_percentage: number, code: string }
- */
 router.post(
   '/validate',
-  [
-    body('code').notEmpty().trim().toUpperCase().withMessage('Promo code is required'),
-  ],
+  [body('code').isString().trim().isLength({ min: 1, max: 40 }).withMessage('Promo code is required')],
   validate,
-  async (req, res) => {
-    const { code } = req.body;
-    try {
-      const result = await pool.query(
-        'SELECT code, discount_percentage FROM public.promo_codes WHERE UPPER(code) = $1 AND is_active = true',
-        [code.toUpperCase()]
-      );
-
-      if (result.rows.length === 0) {
-        return res.json({ valid: false, message: 'Invalid or expired promo code.' });
-      }
-
-      const promo = result.rows[0];
-      res.json({
-        valid: true,
-        code: promo.code,
-        discount_percentage: Number(promo.discount_percentage),
-      });
-    } catch (err) {
-      console.error('[promo] POST /api/promo/validate error:', err.message);
-      res.status(500).json({ error: 'ServerError', message: 'Failed to validate promo code.' });
-    }
-  }
+  asyncHandler(async (req, res) => {
+    const { promo, error } = await findUsablePromo(pool, req.body.code);
+    if (error) return res.json({ valid: false, message: error });
+    res.json({
+      valid: true,
+      code: promo.code,
+      discount_percentage: Number(promo.discount_percentage),
+      min_order_amount: Number(promo.min_order_amount || 0),
+    });
+  })
 );
 
 export default router;

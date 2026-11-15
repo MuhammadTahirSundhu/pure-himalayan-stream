@@ -1,66 +1,45 @@
-// routes/admin/stats.js — OneWater Pakistan
-// GET /api/admin/stats — Dashboard statistics
-
+// routes/admin/stats.js — dashboard numbers
 import { Router } from 'express';
+import { asyncHandler } from '../../lib/asyncHandler.js';
 import pool from '../../db.js';
 
 const router = Router();
 
-/**
- * GET /api/admin/stats
- * Returns aggregated stats for the admin dashboard.
- * Includes: order counts by status, today's revenue, total revenue, message count.
- */
-router.get('/', async (req, res) => {
-  try {
-    const [ordersStats, todayOrders, messages] = await Promise.all([
-      // Total orders grouped by status
-      pool.query(`
-        SELECT 
-          COUNT(*) FILTER (WHERE status = 'pending')    AS pending,
-          COUNT(*) FILTER (WHERE status = 'confirmed')  AS confirmed,
-          COUNT(*) FILTER (WHERE status = 'dispatched') AS dispatched,
-          COUNT(*) FILTER (WHERE status = 'delivered')  AS delivered,
-          COUNT(*) FILTER (WHERE status = 'rejected')   AS rejected,
-          COUNT(*) AS total,
-          COALESCE(SUM(total) FILTER (WHERE status != 'rejected'), 0) AS total_revenue
-        FROM public.orders
-      `),
-      // Today's orders + revenue
-      pool.query(`
-        SELECT 
-          COUNT(*) AS today_orders,
-          COALESCE(SUM(total) FILTER (WHERE status != 'rejected'), 0) AS today_revenue
-        FROM public.orders
-        WHERE created_at >= CURRENT_DATE
-      `),
-      // Unread messages count (all for now)
-      pool.query('SELECT COUNT(*) AS count FROM public.contact_messages'),
-    ]);
-
-    const stats = ordersStats.rows[0];
-    const today = todayOrders.rows[0];
-
-    res.json({
-      orders: {
-        total: Number(stats.total),
-        pending: Number(stats.pending),
-        confirmed: Number(stats.confirmed),
-        dispatched: Number(stats.dispatched),
-        delivered: Number(stats.delivered),
-        rejected: Number(stats.rejected),
-        total_revenue: Number(stats.total_revenue),
-      },
-      today: {
-        orders: Number(today.today_orders),
-        revenue: Number(today.today_revenue),
-      },
-      messages: Number(messages.rows[0].count),
-    });
-  } catch (err) {
-    console.error('[admin/stats] GET error:', err.message);
-    res.status(500).json({ error: 'ServerError', message: 'Failed to fetch stats.' });
-  }
-});
+router.get('/', asyncHandler(async (req, res) => {
+  const [orders, today, inbox] = await Promise.all([
+    pool.query(`
+      SELECT
+        COUNT(*) FILTER (WHERE status = 'pending')    AS pending,
+        COUNT(*) FILTER (WHERE status = 'confirmed')  AS confirmed,
+        COUNT(*) FILTER (WHERE status = 'dispatched') AS dispatched,
+        COUNT(*) FILTER (WHERE status = 'delivered')  AS delivered,
+        COUNT(*) FILTER (WHERE status = 'rejected')   AS rejected,
+        COUNT(*) AS total,
+        -- revenue = water sold on delivered orders (excludes refundable deposits)
+        COALESCE(SUM(total - deposit_total) FILTER (WHERE status = 'delivered'), 0) AS total_revenue
+      FROM public.orders`),
+    pool.query(`
+      SELECT COUNT(*) AS orders,
+             COALESCE(SUM(total - deposit_total) FILTER (WHERE status <> 'rejected'), 0) AS revenue
+      FROM public.orders WHERE created_at >= CURRENT_DATE`),
+    pool.query(`
+      SELECT
+        (SELECT COUNT(*) FROM public.contact_messages WHERE NOT is_read) AS unread_messages,
+        (SELECT COUNT(*) FROM public.event_inquiries WHERE status = 'new') AS new_inquiries,
+        (SELECT COUNT(*) FROM public.city_waitlist) AS waitlist`),
+  ]);
+  const o = orders.rows[0];
+  const n = (v) => Number(v);
+  res.json({
+    orders: {
+      total: n(o.total), pending: n(o.pending), confirmed: n(o.confirmed), dispatched: n(o.dispatched),
+      delivered: n(o.delivered), rejected: n(o.rejected), total_revenue: n(o.total_revenue),
+    },
+    today: { orders: n(today.rows[0].orders), revenue: n(today.rows[0].revenue) },
+    messages: n(inbox.rows[0].unread_messages),
+    new_inquiries: n(inbox.rows[0].new_inquiries),
+    waitlist: n(inbox.rows[0].waitlist),
+  });
+}));
 
 export default router;

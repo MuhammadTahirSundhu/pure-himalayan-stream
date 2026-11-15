@@ -5,11 +5,14 @@ import pkg from 'pg';
 const { Pool } = pkg;
 import dotenv from 'dotenv';
 import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
+import { DEFAULT_SETTINGS } from './lib/settings.js';
 dotenv.config();
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false }, // Required for Supabase pooler connections
+  // Supabase pooler needs SSL; a local Postgres (dev) does not.
+  ssl: /@(localhost|127\.0\.0\.1)[:/]/.test(process.env.DATABASE_URL || '') ? false : { rejectUnauthorized: false },
   max: 10,                            // Max pool connections
   idleTimeoutMillis: 30000,
   connectionTimeoutMillis: 5000,
@@ -48,11 +51,11 @@ export const initDB = async () => {
       console.log('🌱 Seeding products...');
       await client.query(`
         INSERT INTO public.products (id, name, size, price, description, image_url, category, in_stock) VALUES
-        ('300ml',  'One Water 300ml',          '300ml', 30,  'Perfect for on-the-go hydration. Pure Himalayan mineral water in a compact bottle.', 'bottle-300ml.png',  'bottle',    true),
+        ('300ml',  'One Water 300ml',          '300ml', 30,  'Perfect for on-the-go hydration. Purified mineral water in a compact bottle.', 'bottle-300ml.png',  'bottle',    true),
         ('500ml',  'One Water 500ml',          '500ml', 50,  'Our most popular size. Ideal for daily use, gym, and travel.',                       'bottle-500ml.png',  'bottle',    true),
         ('1000ml', 'One Water 1L',             '1L',    80,  'Family-friendly size. Great for home and office use.',                               'bottle-1000ml.png', 'bottle',    true),
-        ('1500ml', 'One Water 1.5L',           '1.5L',  100, 'Maximum hydration for the whole family. Premium Himalayan purity.',                  'bottle-1500ml.png', 'bottle',    true),
-        ('19l',    'One Water 19L Dispenser',  '19L',   250, 'Home & office dispenser bottle. Refundable deposit PKR 1,000 for first order.',      'bottle-19l.png',    'dispenser', true)
+        ('1500ml', 'One Water 1.5L',           '1.5L',  100, 'Maximum hydration for the whole family. 10-stage purified and lab-tested.',                  'bottle-1500ml.png', 'bottle',    true),
+        ('19l',    'One Water 19L Dispenser',  '19L',   250, 'Home & office dispenser bottle. Refundable PKR 1,000 deposit per new bottle — free when you exchange an empty.',      'bottle-19l.png',    'dispenser', true)
         ON CONFLICT (id) DO NOTHING;
       `);
     }
@@ -123,9 +126,7 @@ export const initDB = async () => {
       console.log('🌱 Seeding promo codes...');
       await client.query(`
         INSERT INTO public.promo_codes (code, discount_percentage) VALUES
-        ('EID2026',    15),
         ('WELCOME5',    5),
-        ('RAMADAN10',  10),
         ('ONEWATER20', 20)
         ON CONFLICT (code) DO NOTHING;
       `);
@@ -138,23 +139,6 @@ export const initDB = async () => {
         value jsonb NOT NULL
       );
     `);
-
-    // Seed default settings if table is empty
-    const settingsCount = await client.query('SELECT COUNT(*) AS c FROM public.site_settings');
-    if (parseInt(settingsCount.rows[0].c) === 0) {
-      console.log('🌱 Seeding site settings...');
-      const defaultSettings = [
-        ['payment_accounts', { easypaisa: '0300-1234567', jazzcash: '0301-7654321', sadapay: '0302-9876543' }],
-        ['contact_info',     { phone: '+92 300 123 4567', email: 'info@onewater.pk', address: 'GT Road, Gujranwala, Pakistan' }],
-        ['delivery_info',    { free_delivery_threshold: 500, base_delivery_fee: 100, whatsapp: '923001234567' }],
-      ];
-      for (const [key, value] of defaultSettings) {
-        await client.query(
-          'INSERT INTO public.site_settings (key, value) VALUES ($1, $2) ON CONFLICT (key) DO NOTHING',
-          [key, JSON.stringify(value)]
-        );
-      }
-    }
 
     // ── Admin Users ───────────────────────────────────────────────────────
     await client.query(`
@@ -169,8 +153,13 @@ export const initDB = async () => {
     // Seed the default admin user from env vars (only if no admin exists)
     const adminCount = await client.query('SELECT COUNT(*) AS c FROM public.admin_users');
     if (parseInt(adminCount.rows[0].c) === 0) {
-      const username = process.env.ADMIN_USERNAME || 'admin';
-      const rawPassword = process.env.ADMIN_INITIAL_PASSWORD || 'OneWater@2026!';
+      const username = (process.env.ADMIN_USERNAME || 'admin').trim().toLowerCase();
+      let rawPassword = process.env.ADMIN_INITIAL_PASSWORD;
+      if (!rawPassword) {
+        // Never fall back to a password that lives in source control.
+        rawPassword = crypto.randomBytes(12).toString('base64url');
+        console.log(`   ⚠️  ADMIN_INITIAL_PASSWORD not set — generated one-time password: ${rawPassword}`);
+      }
       const hash = await bcrypt.hash(rawPassword, 12);
       await client.query(
         'INSERT INTO public.admin_users (username, password_hash) VALUES ($1, $2)',
@@ -234,13 +223,14 @@ export const initDB = async () => {
       console.log('🌱 Seeding offers...');
       await client.query(`
         INSERT INTO public.offers (id, title, description, original_price, sale_price, promo_code, discount_text, image_url, badge_text, color_gradient, icon_color, sort_order) VALUES
-        ('eid-bundle', 'Eid Family Bundle', '12x 1.5L bottles + 6x 500ml bottles. Perfect for Eid gatherings.', 1500, 1275, 'EID2026', '15% OFF', '/assets/brand/bottle-1500ml.png', '🎉 Eid Special', 'from-cyan-500/20 to-cyan-700/5', 'text-cyan-400', 1),
-        ('ramadan-pack', 'Ramadan Iftar Pack', '24x 500ml bottles for Iftar gatherings and Suhoor hydration.', 1200, 1080, 'RAMADAN10', '10% OFF', '/assets/brand/bottle-500ml.png', '🌙 Ramadan', 'from-emerald-500/20 to-emerald-700/5', 'text-emerald-400', 2),
-        ('welcome-offer', 'New Customer Welcome', 'First-time order? Get 5% off on any order. No minimum!', 0, 0, 'WELCOME5', '5% OFF', '/assets/brand/bottle-500ml.png', '🎁 Welcome', 'from-violet-500/20 to-violet-700/5', 'text-violet-400', 3),
-        ('bulk-20', 'Bulk Order Discount', 'Order 50+ bottles of any size and get 20% off the entire order.', 0, 0, 'ONEWATER20', '20% OFF', '/assets/brand/bottle-1500ml.png', '📦 Bulk', 'from-blue-500/20 to-blue-700/5', 'text-blue-400', 4)
+        ('welcome-offer', 'New Customer Welcome', 'First order with One Water? Get 5% off your water — one use per phone number.', 0, 0, 'WELCOME5', '5% OFF', '/assets/brand/bottle-500ml.png', '🎁 Welcome', 'from-violet-500/20 to-violet-700/5', 'text-violet-400', 1),
+        ('bulk-20', 'Bulk & Event Orders', 'Ordering for an office, wedding or event? Get 20% off water orders of PKR 5,000 or more.', 0, 0, 'ONEWATER20', '20% OFF', '/assets/brand/bottle-1500ml.png', '📦 Bulk', 'from-blue-500/20 to-blue-700/5', 'text-blue-400', 2)
         ON CONFLICT (id) DO NOTHING;
       `);
     }
+
+    // ── Migrations (idempotent) ───────────────────────────────────────────
+    await runMigrations(client);
 
     await client.query('COMMIT');
     console.log('✅ Database initialized successfully.\n');
@@ -264,12 +254,98 @@ export const initDB = async () => {
       console.log('ℹ️  FK patch skipped (already clean):', fkErr.message);
     }
   } catch (err) {
-    await client.query('ROLLBACK');
+    await client.query('ROLLBACK').catch(() => {});
     console.error('❌ Database initialization failed:', err.message);
     throw err;
   } finally {
     client.release();
   }
 };
+
+const columnExists = async (client, table, column) => {
+  const { rows } = await client.query(
+    `SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = $1 AND column_name = $2`,
+    [table, column]
+  );
+  return rows.length > 0;
+};
+
+/** Adds a column if missing; returns true when it was just created. */
+const addColumn = async (client, table, column, ddl) => {
+  if (await columnExists(client, table, column)) return false;
+  await client.query(`ALTER TABLE public.${table} ADD COLUMN ${column} ${ddl}`);
+  return true;
+};
+
+async function runMigrations(client) {
+  // Orders: server-computed money breakdown, promo audit trail, 19L details
+  await addColumn(client, 'orders', 'subtotal', 'numeric');
+  await addColumn(client, 'orders', 'deposit_total', 'numeric NOT NULL DEFAULT 0');
+  await addColumn(client, 'orders', 'discount', 'numeric NOT NULL DEFAULT 0');
+  await addColumn(client, 'orders', 'delivery_fee', 'numeric NOT NULL DEFAULT 0');
+  await addColumn(client, 'orders', 'promo_code', 'text');
+  await addColumn(client, 'orders', 'delivery_schedule', 'text');
+  await addColumn(client, 'orders', 'customer_note', 'text');
+  await addColumn(client, 'orders', 'status_updated_at', 'timestamptz');
+  await addColumn(client, 'order_items', 'new_bottles', 'integer NOT NULL DEFAULT 0');
+  await addColumn(client, 'order_items', 'deposit_at_time', 'numeric NOT NULL DEFAULT 0');
+
+  // Promo codes: expiry, usage caps, minimum order, one-per-customer
+  await addColumn(client, 'promo_codes', 'expires_at', 'timestamptz');
+  await addColumn(client, 'promo_codes', 'max_uses', 'integer');
+  await addColumn(client, 'promo_codes', 'times_used', 'integer NOT NULL DEFAULT 0');
+  await addColumn(client, 'promo_codes', 'min_order_amount', 'numeric NOT NULL DEFAULT 0');
+  if (await addColumn(client, 'promo_codes', 'once_per_customer', 'boolean NOT NULL DEFAULT false')) {
+    await client.query(`UPDATE public.promo_codes SET once_per_customer = true WHERE code = 'WELCOME5'`);
+    await client.query(`UPDATE public.promo_codes SET min_order_amount = 5000 WHERE code = 'ONEWATER20' AND min_order_amount = 0`);
+  }
+
+  // Inbox state for messages and event leads; phone-first contact
+  await addColumn(client, 'contact_messages', 'is_read', 'boolean NOT NULL DEFAULT false');
+  await client.query('ALTER TABLE public.contact_messages ALTER COLUMN email DROP NOT NULL');
+  await addColumn(client, 'event_inquiries', 'event_type', 'text');
+  await addColumn(client, 'event_inquiries', 'status', `text NOT NULL DEFAULT 'new'`);
+
+  // Admin sessions can be revoked by bumping token_version
+  await addColumn(client, 'admin_users', 'token_version', 'integer NOT NULL DEFAULT 0');
+
+  // "Bring One Water to my city" waitlist — expansion demand signal
+  await client.query(`
+    CREATE TABLE IF NOT EXISTS public.city_waitlist (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      name text NOT NULL,
+      phone text NOT NULL,
+      city text NOT NULL,
+      created_at timestamptz DEFAULT now()
+    );
+  `);
+
+  // Settings: insert any missing keys with real defaults
+  for (const [key, value] of Object.entries(DEFAULT_SETTINGS)) {
+    await client.query(
+      'INSERT INTO public.site_settings (key, value) VALUES ($1, $2) ON CONFLICT (key) DO NOTHING',
+      [key, JSON.stringify(value)]
+    );
+  }
+  // Replace the original placeholder seeds (fake numbers) — never real data.
+  await client.query(
+    `UPDATE public.site_settings SET value = $1 WHERE key = 'payment_accounts' AND jsonb_typeof(value) = 'object'`,
+    [JSON.stringify(DEFAULT_SETTINGS.payment_accounts)]
+  );
+  await client.query(
+    `UPDATE public.site_settings SET value = $1 WHERE key = 'contact_info' AND value->>'phone' = '+92 300 123 4567'`,
+    [JSON.stringify(DEFAULT_SETTINGS.contact_info)]
+  );
+  await client.query(
+    `UPDATE public.site_settings SET value = $1 WHERE key = 'delivery_info' AND NOT (value ? 'bottle_deposit')`,
+    [JSON.stringify(DEFAULT_SETTINGS.delivery_info)]
+  );
+
+  // Product copy: the water is purified in our Gujranwala plant, not Himalayan.
+  await client.query(`UPDATE public.products SET description = 'Perfect for on-the-go hydration. Purified mineral water in a compact bottle.'
+    WHERE description = 'Perfect for on-the-go hydration. Pure Himalayan mineral water in a compact bottle.'`);
+  await client.query(`UPDATE public.products SET description = 'Maximum hydration for the whole family. 10-stage purified and lab-tested.'
+    WHERE description = 'Maximum hydration for the whole family. Premium Himalayan purity.'`);
+}
 
 export default pool;

@@ -20,3 +20,11 @@ export const validate = (req, res, next) => {
   }
   next();
 };
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** Router.param handler: malformed ids are a 404, not a Postgres 500. */
+export const uuidParam = (req, res, next, id) => {
+  if (!UUID_RE.test(id)) return res.status(404).json({ error: 'NotFound', message: 'Not found.' });
+  next();
+};

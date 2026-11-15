@@ -24,11 +24,15 @@ dist-ssr
 *.sw?
 
 # Environment variables
-.env    
+.env
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
 
 # Backend
-./Backend/.env
+backend/.env
+backend/.env.*
+!backend/.env.example
+backend/uploads/
+**/.env
