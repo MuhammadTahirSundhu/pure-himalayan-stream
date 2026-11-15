@@ -13,7 +13,7 @@ export default function HowItWorks() {
       <div aria-hidden className="hidden md:block absolute top-10 left-[16%] right-[16%] h-px"
         style={{ background: 'linear-gradient(90deg, transparent, rgba(0,212,255,0.5), transparent)' }} />
       {STEPS.map(({ icon: Icon, title, text }, i) => (
-        <Reveal key={title} delay={i * 120} className="ow-card ow-card-hover p-6 text-center relative">
+        <Reveal key={title} delay={i * 120} className="ow-card ow-card-hover p-6 h-full text-center relative">
           <div className="relative w-20 h-20 mx-auto mb-4 rounded-full flex items-center justify-center"
             style={{ background: 'radial-gradient(circle, rgba(0,212,255,0.18), rgba(0,212,255,0.04))', border: '1px solid rgba(0,212,255,0.3)' }}>
             <Icon className="w-8 h-8 ow-cyan" />

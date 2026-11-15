@@ -2,12 +2,12 @@ import { useState } from 'react';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Award, ZoomIn } from 'lucide-react';
 import Reveal from '@/components/Reveal';
-import cert1 from '@/assets/certificates/1.jpeg';
-import cert2 from '@/assets/certificates/2.jpeg';
-import cert3 from '@/assets/certificates/3.jpeg';
-import cert4 from '@/assets/certificates/4.jpeg';
-import cert5 from '@/assets/certificates/5.jpeg';
-import cert6 from '@/assets/certificates/6.jpeg';
+import cert1 from '@/assets/certificates/1.webp';
+import cert2 from '@/assets/certificates/2.webp';
+import cert3 from '@/assets/certificates/3.webp';
+import cert4 from '@/assets/certificates/4.webp';
+import cert5 from '@/assets/certificates/5.webp';
+import cert6 from '@/assets/certificates/6.webp';
 
 const certificates = [
   { src: cert1, title: 'Punjab Food Authority License', issuer: 'PFA — Govt. of Punjab' },

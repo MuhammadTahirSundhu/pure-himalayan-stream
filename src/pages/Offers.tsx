@@ -21,8 +21,6 @@ export default function Offers() {
   return (
     <div className="ow-page">
       <Seo
-        title="Water Delivery Offers & Promo Codes | One Water Gujranwala"
-        description="Current One Water promo codes and offers for mineral water delivery in Gujranwala. Apply a code to your cart in one tap."
         path="/offers"
       />
       <PageHero

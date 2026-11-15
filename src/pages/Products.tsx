@@ -44,8 +44,6 @@ export default function Products() {
   return (
     <div className="ow-page">
       <Seo
-        title="Mineral Water Bottles & 19L Prices | One Water Gujranwala"
-        description="Order One Water purified mineral water in Gujranwala. See current bottle and 19L prices, add to cart and pay cash on delivery."
         path="/products"
         jsonLd={productSchema}
       />

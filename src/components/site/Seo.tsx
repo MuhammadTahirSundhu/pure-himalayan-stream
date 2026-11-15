@@ -1,11 +1,15 @@
 import { useEffect } from 'react';
 import JsonLd from './JsonLd';
+import routes from '@/data/seo-routes.json';
+
+const ROUTES: Record<string, { title: string; description: string }> = routes;
 
 export const SITE_URL = 'https://www.onewaterpakistan.com';
 
 interface SeoProps {
-  title: string;
-  description: string;
+  /** Defaults come from src/data/seo-routes.json (also used to prerender <head> at build time). */
+  title?: string;
+  description?: string;
   path: string;
   noindex?: boolean;
   /** Extra JSON-LD objects for this page (e.g. FAQPage, Product). */
@@ -23,7 +27,9 @@ const setMeta = (attr: 'name' | 'property', key: string, content: string) => {
 };
 
 /** Per-route <title>, description, canonical, OG tags and JSON-LD. */
-export default function Seo({ title, description, path, noindex, jsonLd }: SeoProps) {
+export default function Seo({ title: t, description: d, path, noindex, jsonLd }: SeoProps) {
+  const title = t ?? ROUTES[path]?.title ?? 'One Water';
+  const description = d ?? ROUTES[path]?.description ?? '';
   useEffect(() => {
     const url = `${SITE_URL}${path}`;
     document.title = title;

@@ -6,9 +6,10 @@ import SectionHeading from '@/components/site/SectionHeading';
 import WaitlistForm from '@/components/site/WaitlistForm';
 import Reveal from '@/components/Reveal';
 import Seo from '@/components/site/Seo';
-import bottleFamily from '@/assets/media/7.jpeg';
-import bottleStudio from '@/assets/media/13.jpeg';
-import bottle19 from '@/assets/media/15.jpeg';
+import { CardGrid, FeatureCard } from '@/components/site/Cards';
+import bottleFamily from '@/assets/media/7.webp';
+import bottleStudio from '@/assets/media/13.webp';
+import bottle19 from '@/assets/media/15.webp';
 
 const VALUES = [
   { icon: ShieldCheck, title: 'Safety first', text: 'Produced under a Punjab Food Authority licence and an ISO 9001 quality system.' },
@@ -30,8 +31,6 @@ export default function About() {
   return (
     <div className="ow-page">
       <Seo
-        title="About One Water | Gujranwala Mineral Water Plant"
-        description="One Water is a Gujranwala mineral water brand. Learn how we purify our water, our certifications, and our plan to bring One Water to more cities in Pakistan."
         path="/about"
         jsonLd={[{ '@type': 'AboutPage', name: 'About One Water', url: 'https://www.onewaterpakistan.com/about' }]}
       />
@@ -72,15 +71,9 @@ export default function About() {
       <section className="py-16" style={{ background: 'linear-gradient(180deg, #030d1a 0%, #041422 50%, #030d1a 100%)' }}>
         <div className="container mx-auto px-4">
           <SectionHeading eyebrow="What we stand for" title={<>Our <span className="ow-gradient-text">promises</span></>} />
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5 max-w-6xl mx-auto">
-            {VALUES.map(({ icon: Icon, title, text }, i) => (
-              <Reveal key={title} delay={i * 90} className="ow-card ow-card-hover p-6">
-                <Icon className="w-8 h-8 ow-cyan mb-3" />
-                <h3 className="font-heading font-bold text-white mb-2">{title}</h3>
-                <p className="text-sm ow-muted leading-relaxed">{text}</p>
-              </Reveal>
-            ))}
-          </div>
+          <CardGrid cols={4} className="max-w-6xl mx-auto">
+            {VALUES.map(({ icon, title, text }) => <FeatureCard key={title} icon={icon} title={title}>{text}</FeatureCard>)}
+          </CardGrid>
         </div>
       </section>
 

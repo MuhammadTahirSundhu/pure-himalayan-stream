@@ -7,7 +7,8 @@ import PageHero from '@/components/site/PageHero';
 import SectionHeading from '@/components/site/SectionHeading';
 import Reveal from '@/components/Reveal';
 import Seo from '@/components/site/Seo';
-import labReportImage from '@/assets/certificates/6.jpeg';
+import { CardGrid, StatCard } from '@/components/site/Cards';
+import labReportImage from '@/assets/certificates/6.webp';
 
 const HIGHLIGHTS = [
   { label: 'pH', value: '7.8', note: 'WHO range 6.5–8.5' },
@@ -23,8 +24,6 @@ export default function Quality() {
   return (
     <div className="ow-page">
       <Seo
-        title="Water Quality, Lab Report & 10-Stage Purification | One Water"
-        description="See One Water's PCRWR lab results (pH 7.8, TDS 130 mg/L, zero E. coli), certificates and the 10-stage purification process at our Gujranwala plant."
         path="/quality"
       />
       <PageHero
@@ -35,15 +34,9 @@ export default function Quality() {
 
       <section className="py-10">
         <div className="container mx-auto px-4 max-w-5xl">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {HIGHLIGHTS.map((h, i) => (
-              <Reveal key={h.label} delay={i * 80} className="ow-card ow-card-hover p-5 text-center">
-                <p className="text-xs uppercase tracking-wider ow-subtle">{h.label}</p>
-                <p className="font-heading font-black text-4xl ow-gradient-text my-1">{h.value}</p>
-                <p className="text-xs ow-muted">{h.note}</p>
-              </Reveal>
-            ))}
-          </div>
+          <CardGrid cols={4} compactMobile>
+            {HIGHLIGHTS.map((h) => <StatCard key={h.label} value={h.value} label={h.label} note={h.note} />)}
+          </CardGrid>
           <p className="text-center text-xs ow-subtle mt-4">Source: {labReport.lab}, report {labReport.code}, {labReport.reported}.</p>
         </div>
       </section>
@@ -94,16 +87,16 @@ export default function Quality() {
                     <th scope="col" className="text-left font-bold text-white p-4">Parameter</th>
                     <th scope="col" className="text-left font-bold text-white p-4">Highest desirable level</th>
                     <th scope="col" className="text-left font-bold text-white p-4">One Water</th>
-                    <th scope="col" className="text-right font-bold text-white p-4">Status</th>
+                    <th scope="col" className="hidden sm:table-cell text-right font-bold text-white p-4">Status</th>
                   </tr>
                 </thead>
                 <tbody>
                   {qualityResults.map((row, i) => (
                     <tr key={row.parameter} style={{ background: i % 2 ? 'rgba(255,255,255,0.015)' : 'rgba(255,255,255,0.03)', borderTop: '1px solid rgba(0,212,255,0.06)' }}>
-                      <th scope="row" className="text-left font-medium text-white p-4">{row.parameter}</th>
+                      <th scope="row" className="text-left font-medium text-white p-3 sm:p-4">{row.parameter}</th>
                       <td className="p-4 ow-muted">{row.allowedMax} {row.allowedMax.startsWith('No') ? '' : row.unit}</td>
                       <td className="p-4 font-semibold ow-cyan">{row.actual} {row.unit}</td>
-                      <td className="p-4 text-right"><span className="inline-flex items-center gap-1 font-medium text-emerald-400"><CheckCircle2 className="w-4 h-4" /> Pass</span></td>
+                      <td className="hidden sm:table-cell p-4 text-right"><span className="inline-flex items-center gap-1 font-medium text-emerald-400"><CheckCircle2 className="w-4 h-4" /> Pass</span></td>
                     </tr>
                   ))}
                 </tbody>

@@ -1,11 +1,11 @@
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import type { Product } from '@/lib/types';
-import bottle300 from '@/assets/brand/bottle-300ml.png';
-import bottle500 from '@/assets/brand/bottle-500ml.png';
-import bottle1000 from '@/assets/brand/bottle-1000ml.png';
-import bottle1500 from '@/assets/brand/bottle-1500ml.png';
-import bottle19l from '@/assets/brand/bottle-19l.png';
+import bottle300 from '@/assets/brand/bottle-300ml.webp';
+import bottle500 from '@/assets/brand/bottle-500ml.webp';
+import bottle1000 from '@/assets/brand/bottle-1000ml.webp';
+import bottle1500 from '@/assets/brand/bottle-1500ml.webp';
+import bottle19l from '@/assets/brand/bottle-19l.webp';
 
 // Seeded products reference bundled images by file name; admin uploads are full URLs.
 const imageMap: Record<string, string> = {

@@ -7,6 +7,7 @@ import { useSiteSettings, whatsappLink } from '@/hooks/useSiteSettings';
 import PageHero from '@/components/site/PageHero';
 import Reveal from '@/components/Reveal';
 import Seo from '@/components/site/Seo';
+import { CardGrid, FeatureCard } from '@/components/site/Cards';
 import WhatsAppIcon from '@/components/site/WhatsAppIcon';
 
 const EVENT_TYPES = [
@@ -67,8 +68,6 @@ export default function Events() {
   return (
     <div className="ow-page">
       <Seo
-        title="Bulk Water for Events, Weddings & Offices in Gujranwala | One Water"
-        description="Bulk mineral water bottles for weddings, corporate events, schools and gatherings in Gujranwala. Get an instant estimate and a quote on WhatsApp."
         path="/events"
       />
       <PageHero
@@ -109,18 +108,12 @@ export default function Events() {
               <button className="ow-btn w-full" onClick={applyEstimate} disabled={!guests}>Use this estimate in my inquiry</button>
             </Reveal>
 
-            <Reveal delay={100} className="grid sm:grid-cols-2 gap-4">
+            <CardGrid cols={2}>
               {[
                 { icon: PartyPopper, title: 'Weddings & events', text: 'Bottles delivered to your venue before your guests arrive.' },
                 { icon: Building2, title: 'Offices & schools', text: 'Regular 19L or bottle supply on a schedule that suits you.' },
-              ].map(({ icon: Icon, title, text }) => (
-                <div key={title} className="ow-card ow-card-hover p-5">
-                  <Icon className="w-6 h-6 ow-cyan mb-2" />
-                  <h3 className="font-semibold text-white">{title}</h3>
-                  <p className="text-sm ow-muted">{text}</p>
-                </div>
-              ))}
-            </Reveal>
+              ].map(({ icon, title, text }) => <FeatureCard key={title} icon={icon} title={title}>{text}</FeatureCard>)}
+            </CardGrid>
 
             <Reveal delay={150} className="ow-card p-6">
               <h3 className="font-heading font-bold text-white mb-2 flex items-center gap-2"><Tag className="w-5 h-5 ow-cyan" /> Custom labels</h3>

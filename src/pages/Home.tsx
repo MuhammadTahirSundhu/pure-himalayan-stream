@@ -21,8 +21,9 @@ import Faq from '@/components/site/Faq';
 import WaitlistForm from '@/components/site/WaitlistForm';
 import WhatsAppIcon from '@/components/site/WhatsAppIcon';
 import Seo from '@/components/site/Seo';
-import heroPoster from '@/assets/brand/hero-bg.jpg';
-import brandLogo from '@/assets/media/2.jpeg';
+import { CardGrid, FeatureCard, StatCard } from '@/components/site/Cards';
+import heroPoster from '@/assets/brand/hero-bg.webp';
+import brandLogo from '@/assets/media/2.webp';
 
 /** Counts up to a real number once visible. */
 function CountUp({ to, decimals = 0, suffix = '' }: { to: number; decimals?: number; suffix?: string }) {
@@ -68,10 +69,10 @@ const STATS = [
 ];
 
 const FEATURES = [
-  { icon: ShieldCheck, tint: 'text-emerald-400', title: 'Punjab Food Authority licensed', desc: 'Produced under a PFA licence at our own plant in Gujranwala.' },
-  { icon: FlaskConical, tint: 'text-cyan-400', title: 'Independently lab-tested', desc: 'Tested by PCRWR (Govt. of Pakistan): “fit for drinking” on every parameter.' },
-  { icon: Factory, tint: 'text-blue-400', title: 'RO-purified, mineral-balanced', desc: 'Reverse osmosis, UV and ozone — then essential minerals added back for taste.' },
-  { icon: Award, tint: 'text-violet-400', title: 'Halal & ISO 9001 certified', desc: 'Halal certified by HMCA, with an ISO 9001:2015 quality management system.' },
+  { icon: ShieldCheck, tint: 'green' as const, title: 'Punjab Food Authority licensed', desc: 'Produced under a PFA licence at our own plant in Gujranwala.' },
+  { icon: FlaskConical, tint: 'cyan' as const, title: 'Independently lab-tested', desc: 'Tested by PCRWR (Govt. of Pakistan): “fit for drinking” on every parameter.' },
+  { icon: Factory, tint: 'blue' as const, title: 'RO-purified, mineral-balanced', desc: 'Reverse osmosis, UV and ozone — then essential minerals added back for taste.' },
+  { icon: Award, tint: 'violet' as const, title: 'Halal & ISO 9001 certified', desc: 'Halal certified by HMCA, with an ISO 9001:2015 quality management system.' },
 ];
 
 export default function Home() {
@@ -90,8 +91,6 @@ export default function Home() {
   return (
     <div className="ow-page">
       <Seo
-        title="One Water | Mineral Water Delivery in Gujranwala — 19L & Bottles"
-        description={`Order 10-stage purified, PCRWR lab-tested mineral water in ${city}. 19L dispenser bottles and bottled water delivered to your door. Cash on delivery or order on WhatsApp.`}
         path="/"
       />
 
@@ -105,12 +104,14 @@ export default function Home() {
         <div aria-hidden className="absolute inset-0" style={{ background: 'radial-gradient(ellipse at 50% 40%, rgba(3,13,26,0.35) 0%, rgba(3,13,26,0.85) 75%)' }} />
         <Bubbles count={18} />
 
-        <div className="relative z-10 container mx-auto px-4 pt-28 pb-16 text-center">
-          <div className="flex flex-col items-center gap-1 mb-6 animate-fade-up">
-            <img src={brandLogo} alt="One Water Pakistan logo" width={64} height={64} className="w-14 h-14 sm:w-16 sm:h-16 object-contain rounded-full" />
-            <span className="text-xs sm:text-sm font-bold tracking-wide ow-cyan" style={{ textShadow: '0 0 15px rgba(0,212,255,0.6)' }}>“Quality is our Identity”</span>
-          </div>
+        {/* Top-left brand mark + slogan */}
+        <div className="absolute top-24 left-4 lg:left-8 z-30 flex flex-col items-center text-center gap-1 sm:gap-2 animate-fade-up">
+          <img src={brandLogo} alt="One Water Pakistan logo" width={64} height={64} className="w-12 h-12 sm:w-16 sm:h-16 object-contain rounded-full" />
+          <span className="text-[9px] sm:text-[10px] md:text-xs font-medium tracking-[0.1em] uppercase text-white/90" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.6)' }}>One Water Pakistan</span>
+          <span className="text-[11px] sm:text-xs md:text-sm font-bold tracking-wide ow-cyan" style={{ textShadow: '0 0 15px rgba(0,212,255,0.6), 0 2px 4px rgba(0,0,0,0.6)' }}>“Quality is our Identity”</span>
+        </div>
 
+        <div className="relative z-10 container mx-auto px-4 pt-[13.5rem] sm:pt-40 lg:pt-36 pb-16 text-center">
           <span className="ow-eyebrow animate-fade-up" style={{ animationDelay: '80ms' }}>
             <span className="relative flex w-2 h-2"><span className="absolute inline-flex w-full h-full rounded-full bg-emerald-400 animate-ping opacity-75" /><span className="relative inline-flex w-2 h-2 rounded-full bg-emerald-400" /></span>
             Now delivering across {city}
@@ -150,14 +151,10 @@ export default function Home() {
 
       {/* ═══ PROOF STATS (real numbers only) ═══ */}
       <section className="py-12">
-        <div className="container mx-auto px-4 grid grid-cols-2 lg:grid-cols-4 gap-4 max-w-5xl">
-          {STATS.map((s, i) => (
-            <Reveal key={s.label} delay={i * 90} className="ow-card ow-card-hover p-6 text-center">
-              <s.icon className="w-6 h-6 ow-cyan mx-auto mb-2" />
-              <p className="font-heading font-black text-3xl md:text-4xl text-white"><CountUp to={s.value} decimals={s.decimals} /></p>
-              <p className="text-sm mt-1 ow-muted">{s.label}</p>
-            </Reveal>
-          ))}
+        <div className="container mx-auto px-4 max-w-5xl">
+          <CardGrid cols={4} compactMobile>
+            {STATS.map((s) => <StatCard key={s.label} icon={s.icon} value={<CountUp to={s.value} decimals={s.decimals} />} label={s.label} />)}
+          </CardGrid>
         </div>
         <p className="text-center text-xs ow-subtle mt-4"><Link to="/quality" className="hover:underline">Source: PCRWR lab report, March 2026 →</Link></p>
       </section>
@@ -214,15 +211,9 @@ export default function Home() {
       <section className="py-20" style={{ background: 'linear-gradient(180deg, #030d1a 0%, #041422 50%, #030d1a 100%)' }}>
         <div className="container mx-auto px-4">
           <SectionHeading eyebrow={<><Award className="w-4 h-4" /> Why One Water</>} title={<>Quality you can <span className="ow-gradient-text">check for yourself</span></>} subtitle="No vague promises — our licences, certificates and lab report are all on our Quality page." />
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5 max-w-6xl mx-auto">
-            {FEATURES.map((f, i) => (
-              <Reveal key={f.title} delay={i * 100} className="ow-card ow-card-hover p-6 h-full">
-                <f.icon className={`w-8 h-8 mb-4 ${f.tint}`} />
-                <h3 className="font-heading font-bold text-white mb-2">{f.title}</h3>
-                <p className="text-sm leading-relaxed ow-muted">{f.desc}</p>
-              </Reveal>
-            ))}
-          </div>
+          <CardGrid cols={4} className="max-w-6xl mx-auto">
+            {FEATURES.map((f) => <FeatureCard key={f.title} icon={f.icon} tint={f.tint} title={f.title}>{f.desc}</FeatureCard>)}
+          </CardGrid>
           <Reveal className="text-center mt-10">
             <Link to="/quality" className="ow-btn-ghost !rounded-full"><FlaskConical className="w-4 h-4" /> See the lab report & certificates</Link>
           </Reveal>

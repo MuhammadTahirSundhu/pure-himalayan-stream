@@ -10,7 +10,8 @@ import SectionHeading from '@/components/site/SectionHeading';
 import OrderBuilder from '@/components/site/OrderBuilder';
 import Reveal from '@/components/Reveal';
 import Seo from '@/components/site/Seo';
-import bottle19l from '@/assets/brand/bottle-19l.png';
+import { CardGrid, FeatureCard } from '@/components/site/Cards';
+import bottle19l from '@/assets/brand/bottle-19l.webp';
 
 const SCHEDULES: { id: DeliverySchedule; label: string }[] = [
   { id: 'once', label: 'One-time' },
@@ -54,8 +55,6 @@ export default function Delivery() {
   return (
     <div className="ow-page">
       <Seo
-        title="19L Water Bottle Delivery in Gujranwala | One Water"
-        description="Get 19 litre mineral water dispenser bottles delivered to your home or office in Gujranwala. Weekly or one-time delivery, refundable bottle deposit, cash on delivery."
         path="/delivery"
       />
       <PageHero
@@ -131,19 +130,13 @@ export default function Delivery() {
       </section>
 
       <section className="py-12">
-        <div className="container mx-auto px-4 grid sm:grid-cols-2 lg:grid-cols-4 gap-4 max-w-5xl">
-          {[
+        <div className="container mx-auto px-4 max-w-5xl">
+          <CardGrid cols={4}>{[
             { icon: Truck, title: freeDelivery ? 'Free delivery' : 'Doorstep delivery', text: `Anywhere in ${settings.service_areas.cities.join(', ')}.` },
             { icon: RefreshCw, title: 'Swap your empties', text: 'Return an empty, pay only for the water.' },
             { icon: ShieldCheck, title: 'Refundable deposit', text: `${pkr(deposit)} per new bottle — returned when you give the bottle back.` },
             { icon: Wallet, title: 'Cash on delivery', text: 'Pay the rider. No advance, no automatic charges.' },
-          ].map(({ icon: Icon, title, text }, i) => (
-            <Reveal key={title} delay={i * 80} className="ow-card ow-card-hover p-5">
-              <Icon className="w-6 h-6 ow-cyan mb-3" />
-              <h3 className="font-semibold text-white mb-1">{title}</h3>
-              <p className="text-sm ow-muted">{text}</p>
-            </Reveal>
-          ))}
+          ].map(({ icon, title, text }) => <FeatureCard key={title} icon={icon} title={title}>{text}</FeatureCard>)}</CardGrid>
         </div>
       </section>
 

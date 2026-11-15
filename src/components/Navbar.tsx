@@ -1,7 +1,7 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { ShoppingCart, Menu, X, Phone } from 'lucide-react';
-import logoIcon from '@/assets/media/2.jpeg';
+import logoIcon from '@/assets/media/2.webp';
 import { useCart } from '@/contexts/CartContext';
 import { useSiteSettings, telLink } from '@/hooks/useSiteSettings';
 

@@ -8,6 +8,7 @@ import WaitlistForm from '@/components/site/WaitlistForm';
 import WhatsAppIcon from '@/components/site/WhatsAppIcon';
 import Reveal from '@/components/Reveal';
 import Seo from '@/components/site/Seo';
+import { CardGrid, FeatureCard } from '@/components/site/Cards';
 
 const EMPTY = { name: '', phone: '', email: '', message: '' };
 
@@ -39,17 +40,15 @@ export default function Contact() {
 
   const mapQuery = encodeURIComponent(`One Water, ${c.address}`);
   const cards = [
-    { icon: WhatsAppIcon, label: 'WhatsApp', value: c.phone, sub: 'Fastest way to order', href: whatsappLink(c.whatsapp, 'Assalam o Alaikum One Water!'), tint: '#25d366', external: true },
-    { icon: Phone, label: 'Call us', value: c.phone, sub: c.hours, href: telLink(c.phone), tint: '#00d4ff' },
-    { icon: Mail, label: 'Email', value: c.email, sub: 'For business inquiries', href: `mailto:${c.email}`, tint: '#3b82f6' },
-    { icon: MapPin, label: 'Our plant', value: c.address, sub: 'Get directions', href: `https://www.google.com/maps/search/?api=1&query=${mapQuery}`, tint: '#10b981', external: true },
+    { icon: WhatsAppIcon, label: 'WhatsApp', value: c.phone, sub: 'Fastest way to order', href: whatsappLink(c.whatsapp, 'Assalam o Alaikum One Water!'), tint: 'whatsapp' as const, external: true },
+    { icon: Phone, label: 'Call us', value: c.phone, sub: c.hours, href: telLink(c.phone), tint: 'cyan' as const, external: false },
+    { icon: Mail, label: 'Email', value: c.email, sub: 'For business inquiries', href: `mailto:${c.email}`, tint: 'blue' as const, external: false },
+    { icon: MapPin, label: 'Our plant', value: c.address, sub: 'Get directions', href: `https://www.google.com/maps/search/?api=1&query=${mapQuery}`, tint: 'green' as const, external: true },
   ];
 
   return (
     <div className="ow-page">
       <Seo
-        title="Contact One Water | Order Water in Gujranwala on WhatsApp"
-        description={`Call or WhatsApp One Water on ${c.phone} to order mineral water in Gujranwala. Open ${c.hours}. Plant: ${c.address}.`}
         path="/contact"
       />
       <PageHero
@@ -60,18 +59,11 @@ export default function Contact() {
 
       <section className="py-12">
         <div className="container mx-auto px-4 max-w-6xl">
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-12">
-            {cards.map(({ icon: Icon, label, value, sub, href, tint, external }, i) => (
-              <Reveal key={label} delay={i * 80}>
-                <a href={href} {...(external ? { target: '_blank', rel: 'noopener noreferrer' } : {})} className="ow-card ow-card-hover p-5 h-full flex flex-col gap-2">
-                  <span className="w-11 h-11 rounded-xl flex items-center justify-center" style={{ background: `${tint}1f`, color: tint }}><Icon className="w-5 h-5" /></span>
-                  <span className="text-xs uppercase tracking-wider ow-subtle">{label}</span>
-                  <span className="font-semibold text-white break-words">{value}</span>
-                  {sub && <span className="text-xs ow-muted mt-auto">{sub}</span>}
-                </a>
-              </Reveal>
+          <CardGrid cols={4} className="mb-12">
+            {cards.map(({ icon, label, value, sub, href, tint, external }) => (
+              <FeatureCard key={label} icon={icon} tint={tint} eyebrow={label} title={value} href={href} external={external}>{sub}</FeatureCard>
             ))}
-          </div>
+          </CardGrid>
 
           <div className="grid lg:grid-cols-2 gap-8">
             <Reveal>
