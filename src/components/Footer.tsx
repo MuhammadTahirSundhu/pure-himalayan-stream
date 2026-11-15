@@ -70,6 +70,7 @@ export default function Footer() {
                 { to: '/quality',  label: 'Quality & Purity'},
                 { to: '/contact#waitlist', label: 'Bring us to your city' },
                 { to: '/about',    label: 'About Us'        },
+                { to: '/blog',     label: 'Water guides'    },
               ].map(link => (
                 <Link
                   key={link.to} to={link.to}
@@ -93,6 +94,7 @@ export default function Footer() {
                 { to: '/delivery', label: '19L Home Delivery'},
                 { to: '/events',   label: 'Bulk & Events'    },
                 { to: '/offers',   label: 'Offers'            },
+                { to: '/track',    label: 'Track your order'  },
                 { to: '/contact',  label: 'Contact Us'        },
               ].map(link => (
                 <Link

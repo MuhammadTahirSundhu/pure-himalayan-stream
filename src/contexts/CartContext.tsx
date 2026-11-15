@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { api, ApiError } from '@/lib/api';
+import { trackEvent } from '@/lib/analytics';
 
 export interface CartItem {
   id: string;          // product id (one line per product)
@@ -7,7 +8,7 @@ export interface CartItem {
   size: string;
   price: number;       // display only — the server re-prices
   image: string;
-  category: 'bottle' | 'dispenser';
+  category: 'bottle' | 'dispenser' | 'accessory';
   quantity: number;
   newBottles?: number; // 19L only: bottles needing a deposit (rest are exchanged empties)
 }
@@ -62,6 +63,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   }, [items, schedule, promo]);
 
   const addItem = useCallback((item: Omit<CartItem, 'quantity'>, quantity = 1, opts: { open?: boolean } = {}) => {
+    trackEvent('add_to_cart', { currency: 'PKR', value: item.price * quantity, items: [{ item_id: item.id, item_name: item.name, quantity }] });
     setItems((prev) => {
       const existing = prev.find((i) => i.id === item.id);
       if (existing) {
@@ -75,6 +77,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const setItem = useCallback((item: CartItem) => {
+    trackEvent('add_to_cart', { currency: 'PKR', value: item.price * item.quantity, items: [{ item_id: item.id, item_name: item.name, quantity: item.quantity }] });
     setItems((prev) => (prev.some((i) => i.id === item.id) ? prev.map((i) => (i.id === item.id ? item : i)) : [...prev, item]));
   }, []);
 

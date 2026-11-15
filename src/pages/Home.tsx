@@ -21,6 +21,8 @@ import Faq from '@/components/site/Faq';
 import WaitlistForm from '@/components/site/WaitlistForm';
 import WhatsAppIcon from '@/components/site/WhatsAppIcon';
 import Seo from '@/components/site/Seo';
+import OrderAgain from '@/components/site/OrderAgain';
+import Testimonials from '@/components/site/Testimonials';
 import { CardGrid, FeatureCard, StatCard } from '@/components/site/Cards';
 import heroPoster from '@/assets/brand/hero-bg.webp';
 import brandLogo from '@/assets/media/2.webp';
@@ -144,6 +146,7 @@ export default function Home() {
             </a>
           </div>
 
+          <div className="mt-5 animate-fade-up"><OrderAgain /></div>
           <TrustRow compact className="justify-center mt-8 animate-fade-up" />
         </div>
         <div className="absolute bottom-0 inset-x-0"><WaveDivider /></div>
@@ -252,6 +255,8 @@ export default function Home() {
           </Reveal>
         </div>
       </section>
+
+      <Testimonials />
 
       {/* ═══ FAQ ═══ */}
       <section className="py-20" style={{ background: 'linear-gradient(180deg, #030d1a 0%, #041422 50%, #030d1a 100%)' }}>

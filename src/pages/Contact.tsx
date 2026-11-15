@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Phone, Mail, MapPin, Clock, CheckCircle2, Send, MessageSquare, Navigation } from 'lucide-react';
 import { api, ApiError } from '@/lib/api';
+import { trackEvent } from '@/lib/analytics';
 import { useSiteSettings, whatsappLink, telLink } from '@/hooks/useSiteSettings';
 import PageHero from '@/components/site/PageHero';
 import SectionHeading from '@/components/site/SectionHeading';
@@ -26,6 +27,7 @@ export default function Contact() {
     try {
       await api('/api/contact', { method: 'POST', json: form });
       setStatus('sent');
+      trackEvent('generate_lead', { form: 'contact' });
       setForm(EMPTY);
     } catch (err) {
       setStatus('idle');

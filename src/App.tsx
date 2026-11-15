@@ -8,6 +8,7 @@ import Footer from '@/components/Footer';
 import CartSidebar from '@/components/CartSidebar';
 import ScrollToHash from '@/components/ScrollToHash';
 import WhatsAppFab from '@/components/site/WhatsAppFab';
+import AnalyticsTracker from '@/components/site/AnalyticsTracker';
 import Home from './pages/Home';
 
 // Home ships in the main bundle; every other route is code-split.
@@ -21,6 +22,9 @@ const Contact = lazy(() => import('./pages/Contact'));
 const Checkout = lazy(() => import('./pages/Checkout'));
 const Admin = lazy(() => import('./pages/admin/Admin'));
 const NotFound = lazy(() => import('./pages/NotFound'));
+const Track = lazy(() => import('./pages/Track'));
+const Blog = lazy(() => import('./pages/Blog'));
+const BlogPost = lazy(() => import('./pages/BlogPost'));
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 2, refetchOnWindowFocus: false } },
@@ -51,6 +55,7 @@ const App = () => (
       <Sonner position="top-center" />
       <BrowserRouter>
         <ScrollToHash />
+        <AnalyticsTracker />
         <Routes>
           <Route path="/admin" element={<Suspense fallback={<PageFallback />}><Admin /></Suspense>} />
           <Route path="/" element={page(<Home />)} />
@@ -62,6 +67,9 @@ const App = () => (
           <Route path="/about" element={page(<About />)} />
           <Route path="/contact" element={page(<Contact />)} />
           <Route path="/checkout" element={page(<Checkout />)} />
+          <Route path="/track" element={page(<Track />)} />
+          <Route path="/blog" element={page(<Blog />)} />
+          <Route path="/blog/:slug" element={page(<BlogPost />)} />
           <Route path="*" element={page(<NotFound />)} />
         </Routes>
       </BrowserRouter>

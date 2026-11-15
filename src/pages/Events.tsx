@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Calculator, Users, Sparkles, Tag, Building2, PartyPopper, CheckCircle2, Send } from 'lucide-react';
 import { api, ApiError } from '@/lib/api';
+import { trackEvent } from '@/lib/analytics';
 import { pkr } from '@/lib/pricing';
 import { useProducts } from '@/hooks/useProducts';
 import { useSiteSettings, whatsappLink } from '@/hooks/useSiteSettings';
@@ -11,6 +12,7 @@ import { CardGrid, FeatureCard } from '@/components/site/Cards';
 import WhatsAppIcon from '@/components/site/WhatsAppIcon';
 
 const EVENT_TYPES = [
+  { id: 'office', label: 'Office / shop monthly supply', perGuest: 0 },
   { id: 'wedding', label: 'Wedding / Walima', perGuest: 3 },
   { id: 'corporate', label: 'Corporate / Office', perGuest: 2 },
   { id: 'religious', label: 'Religious gathering', perGuest: 2 },
@@ -27,6 +29,8 @@ export default function Events() {
 
   const [guests, setGuests] = useState(150);
   const [eventType, setEventType] = useState('wedding');
+  const calcTypes = EVENT_TYPES.filter((t) => t.perGuest > 0);
+  const [inquiryType, setInquiryType] = useState('wedding');
   const [sizeId, setSizeId] = useState('');
   const size = bottles.find((b) => b.id === sizeId) ?? bottles.find((b) => b.id === '500ml') ?? bottles[0];
   const perGuest = EVENT_TYPES.find((t) => t.id === eventType)?.perGuest ?? 2;
@@ -38,6 +42,7 @@ export default function Events() {
   const [error, setError] = useState('');
 
   const applyEstimate = () => {
+    setInquiryType(eventType);
     setForm((f) => ({
       ...f,
       bottle_size: size?.size ?? f.bottle_size,
@@ -51,8 +56,9 @@ export default function Events() {
     e.preventDefault();
     setStatus('sending'); setError(''); setErrors({});
     try {
-      await api('/api/events', { method: 'POST', json: { ...form, event_type: EVENT_TYPES.find((t) => t.id === eventType)?.label } });
+      await api('/api/events', { method: 'POST', json: { ...form, event_type: EVENT_TYPES.find((t) => t.id === inquiryType)?.label } });
       setStatus('sent');
+      trackEvent('generate_lead', { form: 'bulk_quote' });
       setForm(EMPTY_FORM);
     } catch (err) {
       setStatus('idle');
@@ -89,7 +95,7 @@ export default function Events() {
                 <div>
                   <label className="ow-label" htmlFor="ev-type">Event type</label>
                   <select id="ev-type" className="ow-input" value={eventType} onChange={(e) => setEventType(e.target.value)}>
-                    {EVENT_TYPES.map((t) => <option key={t.id} value={t.id}>{t.label}</option>)}
+                    {calcTypes.map((t) => <option key={t.id} value={t.id}>{t.label}</option>)}
                   </select>
                 </div>
                 <div>
@@ -137,6 +143,12 @@ export default function Events() {
               ) : (
                 <form onSubmit={submit} className="ow-card p-6 space-y-4" noValidate>
                   <h2 className="font-heading font-bold text-xl text-white">Get a bulk quote</h2>
+                  <div>
+                    <label className="ow-label" htmlFor="ev-inquiry-type">What do you need?</label>
+                    <select id="ev-inquiry-type" className="ow-input" value={inquiryType} onChange={(e) => setInquiryType(e.target.value)}>
+                      {EVENT_TYPES.map((t) => <option key={t.id} value={t.id}>{t.label}</option>)}
+                    </select>
+                  </div>
                   <div className="grid sm:grid-cols-2 gap-4">
                     <div><label className="ow-label" htmlFor="ev-name">Your name *</label><input {...field('name')} autoComplete="name" />{errors.name && <p className="ow-error">{errors.name}</p>}</div>
                     <div><label className="ow-label" htmlFor="ev-phone">Phone / WhatsApp *</label><input {...field('phone')} type="tel" inputMode="tel" placeholder="0300 1234567" />{errors.phone && <p className="ow-error">{errors.phone}</p>}</div>
@@ -161,6 +173,27 @@ export default function Events() {
                   <button className="ow-btn w-full" disabled={status === 'sending'}><Send className="w-4 h-4" /> {status === 'sending' ? 'Sending…' : 'Request my quote'}</button>
                 </form>
               )}
+            </div>
+          </Reveal>
+        </div>
+      </section>
+
+      <section className="pb-20">
+        <div className="container mx-auto px-4 max-w-5xl">
+          <Reveal className="ow-card p-6 md:p-10 grid md:grid-cols-[1.2fr_1fr] gap-8 items-center">
+            <div>
+              <span className="ow-eyebrow"><Building2 className="w-4 h-4" /> Offices, shops & schools</span>
+              <h2 className="font-heading font-black text-2xl md:text-3xl text-white mt-4 mb-3">Regular water for your workplace</h2>
+              <p className="ow-muted mb-5">Set it once and stop worrying about running out. Tell us how many people you have and we'll suggest a plan.</p>
+              <ul className="space-y-2 text-sm">
+                {['A fixed delivery day each week', 'Swap your empties — pay only for the water', 'One WhatsApp contact for orders and changes', 'Ask us about monthly billing and dispensers'].map((t) => (
+                  <li key={t} className="flex gap-2 text-white/90"><span className="ow-cyan">✓</span> {t}</li>
+                ))}
+              </ul>
+            </div>
+            <div className="flex flex-col gap-3">
+              <button className="ow-btn" onClick={() => { setInquiryType('office'); document.getElementById('inquiry')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }}>Request an office plan</button>
+              <a className="ow-btn-whatsapp" target="_blank" rel="noopener noreferrer" href={whatsappLink(settings.contact_info.whatsapp, 'Assalam o Alaikum! I would like regular water delivery for my office/shop.')}><WhatsAppIcon /> Discuss on WhatsApp</a>
             </div>
           </Reveal>
         </div>

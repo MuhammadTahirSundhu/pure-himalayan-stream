@@ -15,6 +15,9 @@ export const FALLBACK_SETTINGS: SiteSettings = {
   delivery_info: { bottle_deposit: 1000, charge_delivery: false, base_delivery_fee: 0, free_delivery_threshold: 0, delivery_time: 'During business hours, 9 AM – 7 PM (Friday closed)' },
   service_areas: { cities: ['Gujranwala'], note: 'We deliver across all of Gujranwala city.' },
   lab_report_url: null,
+  business_hours: { open: '09:00', close: '19:00', closed_days: [5] },
+  referral: { enabled: false, new_customer_discount: 0, referrer_credit: 0 },
+  google_review_url: null,
 };
 
 export function useSiteSettings() {

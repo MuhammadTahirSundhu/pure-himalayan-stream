@@ -6,6 +6,7 @@ import SectionHeading from '@/components/site/SectionHeading';
 import WaitlistForm from '@/components/site/WaitlistForm';
 import Reveal from '@/components/Reveal';
 import Seo from '@/components/site/Seo';
+import Gallery from '@/components/site/Gallery';
 import { CardGrid, FeatureCard } from '@/components/site/Cards';
 import bottleFamily from '@/assets/media/7.webp';
 import bottleStudio from '@/assets/media/13.webp';
@@ -67,6 +68,8 @@ export default function About() {
           </Reveal>
         </div>
       </section>
+
+      <Gallery title="Inside One Water" />
 
       <section className="py-16" style={{ background: 'linear-gradient(180deg, #030d1a 0%, #041422 50%, #030d1a 100%)' }}>
         <div className="container mx-auto px-4">

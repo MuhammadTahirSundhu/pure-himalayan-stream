@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { MapPin, CheckCircle2 } from 'lucide-react';
 import { api, ApiError } from '@/lib/api';
+import { trackEvent } from '@/lib/analytics';
 
 /** "Bring One Water to my city" — captures expansion demand by city. */
 export default function WaitlistForm({ defaultCity = '' }: { defaultCity?: string }) {
@@ -15,6 +16,7 @@ export default function WaitlistForm({ defaultCity = '' }: { defaultCity?: strin
     try {
       await api('/api/waitlist', { method: 'POST', json: form });
       setStatus('done');
+      trackEvent('generate_lead', { form: 'waitlist', city: form.city });
     } catch (err) {
       setStatus('idle');
       if (err instanceof ApiError) { setErrors(err.fieldErrors); setError(err.message); }

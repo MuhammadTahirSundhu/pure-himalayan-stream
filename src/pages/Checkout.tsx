@@ -10,11 +10,20 @@ import TrustRow from '@/components/site/TrustRow';
 import WhatsAppIcon from '@/components/site/WhatsAppIcon';
 import WaitlistForm from '@/components/site/WaitlistForm';
 import Seo from '@/components/site/Seo';
+import ClosedNotice from '@/components/site/ClosedNotice';
+import { saveLastOrder } from '@/lib/lastOrder';
+import { trackEvent } from '@/lib/analytics';
 
 const STEPS = [
   { id: 1, label: 'Details', icon: User },
   { id: 2, label: 'Payment', icon: CreditCard },
   { id: 3, label: 'Confirm', icon: ClipboardCheck },
+];
+const SLOTS = [
+  { id: 'any', label: 'Any time' },
+  { id: 'morning', label: 'Morning (9–12)' },
+  { id: 'afternoon', label: 'Afternoon (12–4)' },
+  { id: 'evening', label: 'Evening (4–7)' },
 ];
 const SCHEDULE_LABEL = { once: 'One-time', weekly: 'Weekly', biweekly: 'Every 2 weeks', monthly: 'Monthly' } as const;
 const PHONE_RE = /^(\+?92|0)?3\d{2}[\s-]?\d{7}$/;
@@ -34,7 +43,9 @@ export default function Checkout() {
   const cities = settings.service_areas.cities;
 
   const [step, setStep] = useState(1);
-  const [form, setForm] = useState({ name: '', phone: '', city: cities[0] ?? '', area: '', street: '', note: '' });
+  const [form, setForm] = useState({ name: '', phone: '', city: cities[0] ?? '', area: '', street: '', note: '', slot: 'any' });
+  const [referralInput, setReferralInput] = useState('');
+  const [referralCode, setReferralCode] = useState('');
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [serverErrors, setServerErrors] = useState<Record<string, string>>({});
   const [paymentMethod, setPaymentMethod] = useState('cod');
@@ -70,14 +81,15 @@ export default function Checkout() {
     setQuoteError('');
     api<Quote>('/api/orders/quote', {
       method: 'POST',
-      json: { items: items.map((i) => ({ id: i.id, quantity: i.quantity, new_bottles: i.newBottles })), promo_code: promo?.code, phone: form.phone },
+      json: { items: items.map((i) => ({ id: i.id, quantity: i.quantity, new_bottles: i.newBottles })), promo_code: promo?.code, referral_code: referralCode || undefined, phone: form.phone },
     })
       .then((q) => { if (!cancelled) setQuote(q); })
       .catch((e) => { if (!cancelled) setQuoteError(e instanceof ApiError ? e.message : 'Could not price your order.'); });
     return () => { cancelled = true; };
-  }, [step, items, promo, form.phone]);
+  }, [step, items, promo, form.phone, referralCode]);
 
   useEffect(() => { window.scrollTo({ top: 0, behavior: 'smooth' }); }, [step]);
+  useEffect(() => { if (items.length) trackEvent('begin_checkout', { currency: 'PKR', items: items.map((i) => ({ item_id: i.id, quantity: i.quantity })) }); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const goToPayment = () => {
     setTouched({ name: true, phone: true, city: true, street: true });
@@ -115,12 +127,15 @@ export default function Checkout() {
           customer_name: form.name.trim(), phone: form.phone.trim(), city: form.city, area: form.area.trim(), street: form.street.trim(),
           customer_note: form.note.trim() || undefined, payment_method: paymentMethod, screenshot_url,
           promo_code: quote?.promo_code || undefined, delivery_schedule: hasDispenser ? schedule : undefined,
+          referral_code: quote?.referral_code || undefined, preferred_slot: form.slot,
           items: items.map((i) => ({ id: i.id, quantity: i.quantity, new_bottles: i.newBottles })),
         },
       });
       const summary = items.map((i) => `${i.quantity} × ${i.name}`).join(', ');
       const order: PlacedOrder = { order_ref: res.order_ref, total: res.total, deposit_total: res.deposit_total, payment: account?.label ?? 'Cash on delivery', summary };
       sessionStorage.setItem(LAST_ORDER_KEY, JSON.stringify(order));
+      saveLastOrder({ order_ref: res.order_ref, phone: form.phone.trim(), placed_at: new Date().toISOString(), items: items.map((i) => ({ id: i.id, quantity: i.quantity })), schedule: hasDispenser ? schedule : undefined });
+      trackEvent('purchase', { transaction_id: res.order_ref, value: res.total, currency: 'PKR', payment_method: paymentMethod });
       setPlaced(order);
       clearCart();
     } catch (e) {
@@ -156,8 +171,10 @@ export default function Checkout() {
                 <li key={i} className="flex gap-3"><span className="w-6 h-6 rounded-full shrink-0 flex items-center justify-center text-xs font-bold text-white" style={{ background: 'linear-gradient(135deg,#00d4ff,#0284c7)' }}>{i + 1}</span><span className="ow-muted">{t}</span></li>
               ))}
             </ol>
+            <div className="mb-6 text-left"><ClosedNotice variant="card" /></div>
             <div className="flex flex-col gap-3">
               <a href={whatsappLink(settings.contact_info.whatsapp, waText)} target="_blank" rel="noopener noreferrer" className="ow-btn-whatsapp"><WhatsAppIcon /> Confirm on WhatsApp</a>
+              <Link to={`/track?ref=${placed.order_ref}`} className="ow-btn-ghost">Track this order</Link>
               <button onClick={() => { sessionStorage.removeItem(LAST_ORDER_KEY); setPlaced(null); navigate('/'); }} className="ow-btn-ghost">Back to home</button>
             </div>
           </div>
@@ -253,6 +270,19 @@ export default function Checkout() {
               <label className="ow-label" htmlFor="co-note">Note for delivery (optional)</label>
               <textarea {...inputProps('note')} rows={2} placeholder="e.g. Call before coming, 2nd floor" />
             </div>
+            <div>
+              <span className="ow-label">Preferred delivery time</span>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                {SLOTS.map((sl) => (
+                  <button key={sl.id} type="button" onClick={() => setForm({ ...form, slot: sl.id })} aria-pressed={form.slot === sl.id}
+                    className="rounded-xl px-3 py-2.5 text-sm font-medium transition-all"
+                    style={{ background: form.slot === sl.id ? 'rgba(0,212,255,0.12)' : 'rgba(255,255,255,0.03)', border: `1px solid ${form.slot === sl.id ? '#00d4ff' : 'rgba(255,255,255,0.1)'}`, color: form.slot === sl.id ? '#fff' : 'rgba(150,200,255,0.75)' }}>
+                    {sl.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <ClosedNotice variant="card" />
             <button type="submit" className="ow-btn w-full" disabled={outsideArea}>Continue to payment</button>
           </form>
         )}
@@ -292,6 +322,8 @@ export default function Checkout() {
                     </div>
                   ))}
                   {quote.discount > 0 && <div className="flex justify-between text-emerald-300"><dt>Promo {quote.promo_code}</dt><dd>−{pkr(quote.discount)}</dd></div>}
+                  {quote.referral_discount > 0 && <div className="flex justify-between text-emerald-300"><dt>Referral {quote.referral_code}</dt><dd>−{pkr(quote.referral_discount)}</dd></div>}
+                  {quote.credit_applied > 0 && <div className="flex justify-between text-emerald-300"><dt>Your referral credit</dt><dd>−{pkr(quote.credit_applied)}</dd></div>}
                   {quote.deposit_total > 0 && <div className="flex justify-between"><dt className="ow-muted">Refundable bottle deposit</dt><dd className="text-white">{pkr(quote.deposit_total)}</dd></div>}
                   <div className="flex justify-between"><dt className="ow-muted">Delivery</dt><dd className="text-white">{quote.delivery_fee ? pkr(quote.delivery_fee) : 'Free'}</dd></div>
                   <div className="flex justify-between font-heading font-bold text-xl pt-3" style={{ borderTop: '1px solid rgba(255,255,255,0.1)' }}><dt className="text-white">Total</dt><dd className="ow-cyan">{pkr(quote.total)}</dd></div>
@@ -307,10 +339,22 @@ export default function Checkout() {
                 </div>
               )}
               {promoError && <p className="ow-error">{promoError}</p>}
+              {settings.referral.enabled && !promo && (
+                referralCode && !quote?.referral_error ? (
+                  <p className="text-xs ow-muted">Referral code {referralCode} <button className="underline" onClick={() => setReferralCode('')}>remove</button></p>
+                ) : (
+                  <div className="flex gap-2">
+                    <input className="ow-input !py-2.5 uppercase" placeholder="Referral code from a friend?" value={referralInput} onChange={(e) => setReferralInput(e.target.value)} aria-label="Referral code" />
+                    <button className="ow-btn-ghost !py-2.5 text-sm" onClick={() => setReferralCode(referralInput.trim().toUpperCase())}>Apply</button>
+                  </div>
+                )
+              )}
+              {quote?.referral_error && <p className="ow-error">{quote.referral_error}</p>}
               <div className="text-sm ow-muted pt-2" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
                 <p><span className="text-white">{form.name}</span> · {form.phone}</p>
                 <p>{form.street}{form.area && `, ${form.area}`}, {form.city}</p>
                 {hasDispenser && <p>19L delivery: {SCHEDULE_LABEL[schedule]}</p>}
+                <p>Preferred time: {SLOTS.find((sl) => sl.id === form.slot)?.label}</p>
                 <button className="text-xs ow-cyan hover:underline mt-1" onClick={() => setStep(1)}>Edit details</button>
               </div>
             </div>

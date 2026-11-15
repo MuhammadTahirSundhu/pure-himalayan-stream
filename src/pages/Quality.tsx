@@ -7,6 +7,7 @@ import PageHero from '@/components/site/PageHero';
 import SectionHeading from '@/components/site/SectionHeading';
 import Reveal from '@/components/Reveal';
 import Seo from '@/components/site/Seo';
+import Gallery from '@/components/site/Gallery';
 import { CardGrid, StatCard } from '@/components/site/Cards';
 import labReportImage from '@/assets/certificates/6.webp';
 
@@ -67,6 +68,8 @@ export default function Quality() {
           </Reveal>
         </div>
       </section>
+
+      <Gallery />
 
       <div style={{ background: 'linear-gradient(180deg, #030d1a 0%, #041422 50%, #030d1a 100%)' }}>
         <Certifications />

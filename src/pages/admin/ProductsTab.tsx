@@ -10,8 +10,15 @@ import { useAdminData, run, pkr, Card, Field, ImagePicker, ErrorNote, TableMessa
 
 interface Product {
   id: string; name: string; size: string; price: number; in_stock: boolean;
-  category: 'bottle' | 'dispenser'; description?: string | null; image_url?: string | null;
+  category: Category; description?: string | null; image_url?: string | null;
 }
+
+type Category = 'bottle' | 'dispenser' | 'accessory';
+const CATEGORY: Record<Category, { label: string; short: string; hint: string }> = {
+  dispenser: { label: '19L returnable bottle (with deposit)', short: '19L returnable', hint: 'Returnable 19L bottle — customers pay the refundable bottle deposit (set in Settings) for each NEW bottle; exchanges are deposit-free.' },
+  bottle: { label: 'Disposable bottle (no deposit)', short: 'Disposable bottle', hint: 'Small disposable bottles (500ml, 1.5L, 6L…) — no deposit.' },
+  accessory: { label: 'Accessory (dispenser, pump, stand)', short: 'Accessory', hint: 'Water dispensers, hand pumps, stands etc. — sold outright, no deposit.' },
+};
 
 const ID_RE = /^[a-z0-9-]{1,40}$/i;
 const EMPTY = { id: '', name: '', size: '', price: '', category: 'bottle' as Product['category'], description: '' };
@@ -74,15 +81,12 @@ export default function ProductsTab() {
           <Field label="Price (PKR) *" hint="0 is allowed"><Input type="number" min="0" value={form.price} onChange={set('price')} /></Field>
           <Field
             label="Category *"
-            hint={form.category === 'dispenser'
-              ? 'Returnable 19L bottle — customers pay the refundable bottle deposit (set in Settings) for each new bottle.'
-              : 'Disposable bottle — no deposit.'}
+            hint={CATEGORY[form.category].hint}
           >
             <Select value={form.category} onValueChange={v => setForm(f => ({ ...f, category: v as Product['category'] }))}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="bottle">Bottle (disposable)</SelectItem>
-                <SelectItem value="dispenser">Dispenser (19L returnable)</SelectItem>
+                {(Object.keys(CATEGORY) as Category[]).map(c => <SelectItem key={c} value={c}>{CATEGORY[c].label}</SelectItem>)}
               </SelectContent>
             </Select>
           </Field>
@@ -114,7 +118,7 @@ export default function ProductsTab() {
                   <div className="text-xs text-muted-foreground font-mono">{p.id}</div>
                 </TableCell>
                 <TableCell>{p.size}</TableCell>
-                <TableCell className="text-xs">{p.category === 'dispenser' ? '19L returnable' : 'Bottle'}</TableCell>
+                <TableCell className="text-xs">{CATEGORY[p.category]?.short || p.category}</TableCell>
                 <TableCell>
                   {editing === p.id ? (
                     <div className="flex gap-2">

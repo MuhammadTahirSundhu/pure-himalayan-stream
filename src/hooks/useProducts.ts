@@ -16,7 +16,7 @@ const imageMap: Record<string, string> = {
   'bottle-19l.png': bottle19l,
 };
 
-interface ApiProduct { id: string; name: string; size: string; price: string | number; description: string | null; image_url: string | null; category: 'bottle' | 'dispenser'; in_stock: boolean }
+interface ApiProduct { id: string; name: string; size: string; price: string | number; description: string | null; image_url: string | null; category: 'bottle' | 'dispenser' | 'accessory'; in_stock: boolean }
 
 export function useProducts() {
   return useQuery({

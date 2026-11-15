@@ -1,9 +1,10 @@
 import { useEffect, useState, type ReactNode } from 'react';
-import { CreditCard, Phone, Truck, MapPin, FlaskConical, KeyRound, Plus, Trash2, X, ExternalLink, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { CreditCard, Phone, Truck, MapPin, FlaskConical, KeyRound, Plus, Trash2, X, ExternalLink, AlertTriangle, CheckCircle2, Clock, Gift, Star, Send } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { adminApi } from '@/lib/api';
 import { useAdminData, errMsg, Card, Field, ErrorNote, PageTitle, Spinner } from './ui';
@@ -16,6 +17,9 @@ interface Settings {
   delivery_info: { bottle_deposit: number; charge_delivery: boolean; base_delivery_fee: number; free_delivery_threshold: number; delivery_time: string };
   service_areas: { cities: string[]; note: string };
   lab_report_url: string;
+  business_hours: { open: string; close: string; closed_days: number[] };
+  referral: { enabled: boolean; new_customer_discount: number; referrer_credit: number };
+  google_review_url: string;
 }
 type SectionKey = Exclude<keyof Settings, 'lab_report_url'>;
 
@@ -29,6 +33,9 @@ const EMPTY: Settings = {
   delivery_info: { bottle_deposit: 0, charge_delivery: false, base_delivery_fee: 0, free_delivery_threshold: 0, delivery_time: '' },
   service_areas: { cities: [], note: '' },
   lab_report_url: '',
+  business_hours: { open: '09:00', close: '19:00', closed_days: [5] },
+  referral: { enabled: false, new_customer_discount: 0, referrer_credit: 0 },
+  google_review_url: '',
 };
 
 const num = (v: string) => (v === '' ? 0 : Math.max(0, Number(v) || 0));
@@ -59,6 +66,10 @@ export default function SettingsTab({ onLogout }: { onLogout: (message?: string)
           <ContactSection value={draft.contact_info} onChange={v => patch('contact_info', v)} dirty={dirty('contact_info')} onSave={() => save('contact_info')} />
           <DeliverySection value={draft.delivery_info} onChange={v => patch('delivery_info', v)} dirty={dirty('delivery_info')} onSave={() => save('delivery_info')} />
           <AreasSection value={draft.service_areas} onChange={v => patch('service_areas', v)} dirty={dirty('service_areas')} onSave={() => save('service_areas')} />
+          <HoursSection value={draft.business_hours} onChange={v => patch('business_hours', v)} dirty={dirty('business_hours')} onSave={() => save('business_hours')} />
+          <ReferralSection value={draft.referral} onChange={v => patch('referral', v)} dirty={dirty('referral')} onSave={() => save('referral')} />
+          <ReviewLinkSection value={draft.google_review_url} onChange={v => patch('google_review_url', v)} dirty={dirty('google_review_url')} onSave={() => save('google_review_url')} />
+          <TelegramCard />
           <LabReportSection url={saved.lab_report_url} onUploaded={url => setSaved(s => ({ ...s, lab_report_url: url }))} />
         </>
       )}
@@ -245,6 +256,104 @@ function AreasSection({ value, onChange, dirty, onSave }: SectionProps<Settings[
       </div>
       <Field label="Note shown to customers"><Input value={value.note} maxLength={200} onChange={e => onChange({ ...value, note: e.target.value })} /></Field>
     </Section>
+  );
+}
+
+// ─── Business hours ──────────────────────────────────────────────────────────
+
+const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const WEEK_ORDER = [1, 2, 3, 4, 5, 6, 0]; // Mon → Sun
+
+function HoursSection({ value, onChange, dirty, onSave }: SectionProps<Settings['business_hours']>) {
+  const toggleDay = (d: number, closed: boolean) =>
+    onChange({ ...value, closed_days: closed ? [...new Set([...value.closed_days, d])].sort() : value.closed_days.filter(x => x !== d) });
+  return (
+    <Section
+      title="Business hours" icon={<Clock className="w-4 h-4 text-primary" />} dirty={dirty} onSave={onSave}
+      validate={() => (!/^\d{2}:\d{2}$/.test(value.open) || !/^\d{2}:\d{2}$/.test(value.close) ? 'Enter opening and closing times.' : value.open >= value.close ? 'Closing time must be after opening time.' : '')}
+    >
+      <p className="text-sm text-muted-foreground">Pakistan time. Outside these hours the website tells customers you're closed and their order will be handled when you open. (The &ldquo;Opening hours&rdquo; text under Contact info is what's displayed — keep both in sync.)</p>
+      <div className="grid grid-cols-2 gap-3 max-w-sm">
+        <Field label="Opens"><Input type="time" value={value.open} onChange={e => onChange({ ...value, open: e.target.value })} /></Field>
+        <Field label="Closes"><Input type="time" value={value.close} onChange={e => onChange({ ...value, close: e.target.value })} /></Field>
+      </div>
+      <div>
+        <p className="text-xs font-medium text-muted-foreground mb-2">Closed all day on</p>
+        <div className="flex flex-wrap gap-x-4 gap-y-2">
+          {WEEK_ORDER.map(d => (
+            <label key={d} className="flex items-center gap-2 text-sm cursor-pointer">
+              <Checkbox checked={value.closed_days.includes(d)} onCheckedChange={v => toggleDay(d, v === true)} /> {DAYS[d]}
+            </label>
+          ))}
+        </div>
+      </div>
+    </Section>
+  );
+}
+
+// ─── Referrals ───────────────────────────────────────────────────────────────
+
+function ReferralSection({ value, onChange, dirty, onSave }: SectionProps<Settings['referral']>) {
+  return (
+    <Section title="Refer a friend" icon={<Gift className="w-4 h-4 text-primary" />} dirty={dirty} onSave={onSave}
+      validate={() => (value.enabled && !value.new_customer_discount ? 'Set a new customer discount above 0 — codes are only accepted while there is a discount to give.' : '')}>
+      <div className="text-sm text-muted-foreground space-y-1">
+        <p>How it works: every customer gets their own referral code after ordering. When a <strong className="text-foreground">new</strong> customer (a phone number that has never ordered) enters that code at checkout:</p>
+        <ul className="list-disc pl-5 space-y-0.5">
+          <li>the new customer gets the discount below off their first order, and</li>
+          <li>once that order is <strong className="text-foreground">delivered</strong>, the referrer gets the credit below, taken off their next order automatically.</li>
+        </ul>
+        <p>A referral code can't be combined with a promo code, and can't be used on your own number. Credits show in the Customers tab, where you can adjust them.</p>
+      </div>
+      <label className="flex items-center gap-3 text-sm cursor-pointer">
+        <Switch checked={value.enabled} onCheckedChange={v => onChange({ ...value, enabled: v })} />
+        Referral rewards {value.enabled ? 'ON' : <span className="text-muted-foreground">OFF — codes are not accepted at checkout</span>}
+      </label>
+      <div className="grid sm:grid-cols-2 gap-3">
+        <Field label="New customer discount (PKR)" hint="Off their first order's water total.">
+          <Input type="number" min="0" value={value.new_customer_discount} onChange={e => onChange({ ...value, new_customer_discount: num(e.target.value) })} />
+        </Field>
+        <Field label="Referrer credit (PKR)" hint="Given after the friend's order is delivered.">
+          <Input type="number" min="0" value={value.referrer_credit} onChange={e => onChange({ ...value, referrer_credit: num(e.target.value) })} />
+        </Field>
+      </div>
+    </Section>
+  );
+}
+
+// ─── Google review link ─────────────────────────────────────────────────────
+
+function ReviewLinkSection({ value, onChange, dirty, onSave }: SectionProps<string>) {
+  return (
+    <Section title="Google review link" icon={<Star className="w-4 h-4 text-primary" />} dirty={dirty} onSave={onSave}
+      validate={() => (value.trim() && !/^https:\/\/\S+$/.test(value.trim()) ? 'The link must start with https://' : '')}>
+      <p className="text-sm text-muted-foreground">
+        Used for &ldquo;Review us on Google&rdquo; buttons. To get it: open your <strong className="text-foreground">Google Business Profile</strong> (search your business name on Google while signed in, or go to business.google.com) → <strong className="text-foreground">&ldquo;Ask for reviews&rdquo;</strong> → copy the link (looks like https://g.page/r/…/review).
+      </p>
+      <Field label="Review link">
+        <Input type="url" maxLength={500} placeholder="https://g.page/r/…/review" value={value} onChange={e => onChange(e.target.value)} />
+      </Field>
+      {value.trim().startsWith('https://') && (
+        <a href={value.trim()} target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline inline-flex items-center gap-1">Test link <ExternalLink className="w-3 h-3" /></a>
+      )}
+    </Section>
+  );
+}
+
+// ─── Telegram alerts (info only) ────────────────────────────────────────────
+
+function TelegramCard() {
+  return (
+    <Card title="Telegram order alerts (free)" icon={<Send className="w-4 h-4 text-primary" />}>
+      <p className="text-sm text-muted-foreground">Get a Telegram message on your phone for every new order, even when this panel is closed. One-time setup:</p>
+      <ol className="list-decimal pl-5 text-sm space-y-1.5">
+        <li>In Telegram, open <a href="https://t.me/BotFather" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">@BotFather</a>, send <code className="text-xs bg-muted px-1 rounded">/newbot</code> and follow the steps. Copy the <strong>bot token</strong> it gives you.</li>
+        <li>Open your new bot and send it any message (e.g. &ldquo;hi&rdquo;). For a group, add the bot to the group and send a message there.</li>
+        <li>Visit <code className="text-xs bg-muted px-1 rounded break-all">https://api.telegram.org/bot&lt;TOKEN&gt;/getUpdates</code> in a browser and copy the number after <code className="text-xs bg-muted px-1 rounded">"chat":{'{'}"id":</code> — that's your <strong>chat id</strong> (group ids start with -).</li>
+        <li>In <strong>Render → your backend service → Environment</strong>, add <code className="text-xs bg-muted px-1 rounded">TELEGRAM_BOT_TOKEN</code> and <code className="text-xs bg-muted px-1 rounded">TELEGRAM_CHAT_ID</code>, then save (Render redeploys automatically).</li>
+      </ol>
+      <p className="text-xs text-muted-foreground">These are server secrets, so they're set in Render rather than here. Place a test order afterwards to check it works.</p>
+    </Card>
   );
 }
 

@@ -10,8 +10,17 @@ import SectionHeading from '@/components/site/SectionHeading';
 import OrderBuilder from '@/components/site/OrderBuilder';
 import Reveal from '@/components/Reveal';
 import Seo from '@/components/site/Seo';
+import ClosedNotice from '@/components/site/ClosedNotice';
+import { MapPin } from 'lucide-react';
+import { whatsappLink } from '@/hooks/useSiteSettings';
 import { CardGrid, FeatureCard } from '@/components/site/Cards';
 import bottle19l from '@/assets/brand/bottle-19l.webp';
+
+// Well-known localities — the whole city is served, this list just helps people find theirs.
+const GUJRANWALA_AREAS = [
+  'Satellite Town', 'Model Town', 'DC Colony', 'Peoples Colony', 'Garden Town', 'Civil Lines', 'Wapda Town',
+  'Citi Housing', 'Gujranwala Cantt', 'Rahwali', 'Green Valley', 'Sialkot Bypass', 'GT Road', 'Nowshera Road',
+];
 
 const SCHEDULES: { id: DeliverySchedule; label: string }[] = [
   { id: 'once', label: 'One-time' },
@@ -117,6 +126,7 @@ export default function Delivery() {
                 </dl>
 
                 <button onClick={addToCart} className="ow-btn w-full !py-4"><ShoppingCart className="w-5 h-5" /> Add to cart</button>
+                <ClosedNotice variant="card" />
               </div>
             ) : (
               <div className="ow-card p-6 md:p-8 space-y-4">
@@ -137,6 +147,22 @@ export default function Delivery() {
             { icon: ShieldCheck, title: 'Refundable deposit', text: `${pkr(deposit)} per new bottle — returned when you give the bottle back.` },
             { icon: Wallet, title: 'Cash on delivery', text: 'Pay the rider. No advance, no automatic charges.' },
           ].map(({ icon, title, text }) => <FeatureCard key={title} icon={icon} title={title}>{text}</FeatureCard>)}</CardGrid>
+        </div>
+      </section>
+
+      <section className="py-12">
+        <div className="container mx-auto px-4 max-w-4xl">
+          <SectionHeading eyebrow={<><MapPin className="w-4 h-4" /> Delivery areas</>} title={<>We deliver across <span className="ow-gradient-text">all of {settings.service_areas.cities.join(', ')}</span></>}
+            subtitle="Homes, offices, shops and schools anywhere in the city, including:" />
+          <Reveal className="flex flex-wrap justify-center gap-2">
+            {GUJRANWALA_AREAS.map((a) => (
+              <span key={a} className="px-3 py-1.5 rounded-full text-sm text-white/85" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(0,212,255,0.18)' }}>{a}</span>
+            ))}
+          </Reveal>
+          <p className="text-center text-sm ow-muted mt-6">
+            Don't see your area? We most likely still deliver —{' '}
+            <a className="ow-cyan hover:underline" target="_blank" rel="noopener noreferrer" href={whatsappLink(settings.contact_info.whatsapp, 'Assalam o Alaikum! Do you deliver 19L water to my area: ')}>ask us on WhatsApp</a>.
+          </p>
         </div>
       </section>
 

@@ -26,7 +26,9 @@ function ProductSkeleton() {
 export default function Products() {
   const { data: products, isLoading, error, refetch } = useProducts();
   const { settings } = useSiteSettings();
-  const count = products?.length ?? 5;
+  const water = (products ?? []).filter((p) => p.category !== 'accessory');
+  const accessories = (products ?? []).filter((p) => p.category === 'accessory');
+  const count = products ? water.length : 5;
 
   const productSchema = (products ?? []).map((p) => ({
     '@type': 'Product',
@@ -70,7 +72,17 @@ export default function Products() {
           ) : (
             <div className={`grid gap-5 mx-auto ${count <= 2 ? 'max-w-2xl sm:grid-cols-2' : 'sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5'}`}>
               {isLoading && Array.from({ length: 4 }).map((_, i) => <ProductSkeleton key={i} />)}
-              {products?.map((p) => <ProductCard key={p.id} product={p} />)}
+              {water.map((p) => <ProductCard key={p.id} product={p} />)}
+            </div>
+          )}
+
+          {accessories.length > 0 && (
+            <div className="mt-14">
+              <h2 className="font-heading font-bold text-2xl text-white text-center mb-2">Dispensers & accessories</h2>
+              <p className="ow-muted text-center mb-8">Everything you need to serve your 19L water at home or the office.</p>
+              <div className={`grid gap-5 mx-auto ${accessories.length <= 2 ? 'max-w-2xl sm:grid-cols-2' : 'sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'}`}>
+                {accessories.map((p) => <ProductCard key={p.id} product={p} />)}
+              </div>
             </div>
           )}
 

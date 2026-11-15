@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Eye, RefreshCw, Phone, MessageCircle, ExternalLink } from 'lucide-react';
+import { Eye, RefreshCw, Phone, MessageCircle, ExternalLink, Download } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -7,11 +7,12 @@ import { Table, TableHeader, TableHead, TableBody, TableRow, TableCell } from '@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { adminApi } from '@/lib/api';
+import { SCHEDULE_LABEL, SLOT_LABEL, itemsText } from './orderFormat';
 import { useAdminData, pkr, fmtDate, toIntlPk, errMsg, StatusPill, TableMessage, ErrorNote, PageTitle } from './ui';
 
 export type OrderStatus = 'pending' | 'confirmed' | 'dispatched' | 'delivered' | 'rejected';
 
-interface OrderItem { product_id: string; name: string; quantity: number; price: number; new_bottles: number; deposit: number }
+export interface OrderItem { product_id: string; name: string; quantity: number; price: number; new_bottles: number; deposit: number }
 export interface Order {
   id: string; order_ref: string; customer_name: string; phone: string;
   city: string; area: string | null; street: string;
@@ -19,6 +20,7 @@ export interface Order {
   subtotal: number | null; deposit_total: number; discount: number; delivery_fee: number; total: number;
   promo_code: string | null; delivery_schedule: string | null; customer_note: string | null;
   notes: string | null; created_at: string; status_updated_at: string | null; items: OrderItem[];
+  preferred_slot: string | null; referral_code_used: string | null; referral_discount: number; credit_applied: number;
 }
 
 const STATUSES: OrderStatus[] = ['pending', 'confirmed', 'dispatched', 'delivered', 'rejected'];
@@ -44,7 +46,29 @@ const statusColors: Record<string, string> = {
   rejected: 'bg-red-500/15 text-red-400',
 };
 
-const SCHEDULE_LABEL: Record<string, string> = { once: 'One-time', weekly: 'Weekly', biweekly: 'Every 2 weeks', monthly: 'Monthly' };
+const csvCell = (v: unknown) => {
+  let s = v === null || v === undefined ? '' : String(v);
+  if (typeof v === 'string' && /^[=+\-@\t]/.test(s)) s = `'${s}`; // stop Excel treating text as a formula
+  return /[",\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+};
+const pad = (n: number) => String(n).padStart(2, '0');
+const csvDate = (iso: string) => { const d = new Date(iso); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`; };
+
+/** Downloads the given orders as CSV (UTF-8 BOM so Excel shows Urdu names correctly). */
+function exportCsv(orders: Order[], label: string) {
+  const head = ['ref', 'date', 'name', 'phone', 'city', 'area', 'street', 'items', 'subtotal', 'discount', 'referral_discount', 'credit_applied',
+    'deposit_total', 'delivery_fee', 'total', 'payment_method', 'status', 'preferred_slot', 'delivery_schedule', 'promo_code', 'referral_code_used'];
+  const rows = orders.map(o => [o.order_ref, csvDate(o.created_at), o.customer_name, o.phone, o.city, o.area, o.street, itemsText(o.items),
+    o.subtotal, o.discount, o.referral_discount, o.credit_applied, o.deposit_total, o.delivery_fee, o.total,
+    o.payment_method, o.status, o.preferred_slot, o.delivery_schedule, o.promo_code, o.referral_code_used].map(v => (typeof v === 'string' ? v : v == null ? '' : Number(v))));
+  const csv = '\uFEFF' + [head, ...rows].map(r => r.map(csvCell).join(',')).join('\r\n');
+  const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+  const a = Object.assign(document.createElement('a'), { href: url, download: `onewater-orders-${label}-${new Date().toISOString().slice(0, 10)}.csv` });
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
 
 export default function OrdersTab({ recent = false, onChanged }: { recent?: boolean; onChanged?: () => void }) {
   const [filter, setFilter] = useState<'all' | OrderStatus>('all');
@@ -67,6 +91,10 @@ export default function OrdersTab({ recent = false, onChanged }: { recent?: bool
               {STATUSES.map(s => <SelectItem key={s} value={s} className="capitalize">{s}</SelectItem>)}
             </SelectContent>
           </Select>
+          <Button variant="outline" size="sm" className="h-10" disabled={loading || !orders.length}
+            onClick={() => { exportCsv(orders, filter); toast.success(`Exported ${orders.length} order${orders.length === 1 ? '' : 's'}.`); }}>
+            <Download className="w-4 h-4 mr-2" /> Export CSV
+          </Button>
           <Button variant="outline" size="sm" className="h-10" onClick={reload}><RefreshCw className="w-4 h-4 mr-2" /> Refresh</Button>
         </>}>Order Management</PageTitle>
       )}
@@ -181,6 +209,7 @@ function OrderDetail({ order, onUpdated }: { order: Order; onUpdated: (patch: Pa
             <a href={order.screenshot_url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline inline-flex items-center gap-1">View <ExternalLink className="w-3 h-3" /></a>
           </Row>
         )}
+        {order.preferred_slot && <Row label="Preferred time">{SLOT_LABEL[order.preferred_slot] || order.preferred_slot}</Row>}
         {order.delivery_schedule && <Row label="Delivery schedule">{SCHEDULE_LABEL[order.delivery_schedule] || order.delivery_schedule}</Row>}
         <Row label="Placed">{fmtDate(order.created_at)}</Row>
         {order.status_updated_at && <Row label="Status updated">{fmtDate(order.status_updated_at)}</Row>}
@@ -212,6 +241,9 @@ function OrderDetail({ order, onUpdated }: { order: Order; onUpdated: (patch: Pa
           <Row label="Subtotal (water)">{pkr(subtotal)}</Row>
           {Number(order.discount) > 0 && <Row label={`Discount${order.promo_code ? ` (${order.promo_code})` : ''}`}>− {pkr(order.discount)}</Row>}
           {!Number(order.discount) && order.promo_code && <Row label="Promo code">{order.promo_code}</Row>}
+          {Number(order.referral_discount) > 0 && <Row label={`Referral discount${order.referral_code_used ? ` (${order.referral_code_used})` : ''}`}>− {pkr(order.referral_discount)}</Row>}
+          {!Number(order.referral_discount) && order.referral_code_used && <Row label="Referral code used">{order.referral_code_used}</Row>}
+          {Number(order.credit_applied) > 0 && <Row label="Referral credit applied">− {pkr(order.credit_applied)}</Row>}
           {Number(order.deposit_total) > 0 && <Row label="Bottle deposit (refundable)">{pkr(order.deposit_total)}</Row>}
           <Row label="Delivery fee">{Number(order.delivery_fee) > 0 ? pkr(order.delivery_fee) : 'Free'}</Row>
           <div className="flex justify-between font-heading font-bold text-lg pt-1">

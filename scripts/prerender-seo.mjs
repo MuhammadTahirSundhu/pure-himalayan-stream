@@ -8,6 +8,10 @@ import path from 'node:path';
 const SITE = 'https://www.onewaterpakistan.com';
 const dist = path.resolve('dist');
 const routes = JSON.parse(fs.readFileSync('src/data/seo-routes.json', 'utf8'));
+// Guides: one prerendered page per article.
+for (const post of JSON.parse(fs.readFileSync('src/data/blog/index.json', 'utf8'))) {
+  routes[`/blog/${post.slug}`] = { title: `${post.title} | One Water`, description: post.description, h1: post.title };
+}
 const template = fs.readFileSync(path.join(dist, 'index.html'), 'utf8');
 
 const esc = (s) => s.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -45,7 +49,7 @@ fs.writeFileSync(path.join(dist, '404.html'), render('/404', { title: 'Page not 
 
 const today = new Date().toISOString().slice(0, 10);
 const sitemap = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n`
-  + Object.keys(routes).map((r) => `  <url><loc>${SITE}${r}</loc><lastmod>${today}</lastmod><priority>${r === '/' ? '1.0' : r === '/delivery' || r === '/products' ? '0.9' : '0.7'}</priority></url>`).join('\n')
+  + Object.keys(routes).map((r) => `  <url><loc>${SITE}${r}</loc><lastmod>${today}</lastmod><priority>${r === '/' ? '1.0' : r === '/delivery' || r === '/products' ? '0.9' : r.startsWith('/blog/') ? '0.6' : '0.7'}</priority></url>`).join('\n')
   + `\n</urlset>\n`;
 fs.writeFileSync(path.join(dist, 'sitemap.xml'), sitemap);
 console.log(`prerendered ${Object.keys(routes).length} routes + 404.html + sitemap.xml`);
