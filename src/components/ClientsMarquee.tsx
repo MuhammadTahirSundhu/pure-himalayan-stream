@@ -1,4 +1,6 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { api } from '@/lib/api';
 import { Building2 } from 'lucide-react';
 
 interface Client {
@@ -102,26 +104,21 @@ function ClientCardSkeleton() {
 }
 
 export default function ClientsMarquee() {
-  const [clients, setClients] = useState<Client[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const { data: clients = [], isLoading } = useQuery({
+    queryKey: ['clients'],
+    queryFn: () => api<Client[]>('/api/clients'),
+    staleTime: 10 * 60 * 1000,
+  });
   const trackRef = useRef<HTMLDivElement>(null);
   const animRef = useRef<number | null>(null);
   const posRef = useRef(0);
   const isPausedRef = useRef(false);
 
-  useEffect(() => {
-    fetch('/api/clients')
-      .then((r) => r.json())
-      .then((data) => {
-        setClients(Array.isArray(data) ? data : []);
-        setIsLoading(false);
-      })
-      .catch(() => setIsLoading(false));
-  }, []);
 
   // Smooth JS-driven marquee — scrolls LEFT → RIGHT, pauses on hover
   useEffect(() => {
     if (isLoading || clients.length === 0) return;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     const track = trackRef.current;
     if (!track) return;
 
@@ -149,9 +146,12 @@ export default function ClientsMarquee() {
     };
   }, [isLoading, clients]);
 
-  // Duplicate clients multiple times so the marquee loops seamlessly even on ultrawide monitors
-  // We use 50 copies (25 for the first half, 25 for the second half)
-  const displayClients = Array(50).fill(clients).flat();
+  // Two identical halves; each half holds enough cards to span an ultrawide screen.
+  const perHalf = Math.max(1, Math.ceil(14 / Math.max(1, clients.length)));
+  const displayClients = Array(perHalf * 2).fill(clients).flat();
+
+  // Nothing to show publicly until the owner adds clients in the admin panel.
+  if (!isLoading && clients.length === 0) return null;
 
   return (
     <section className="py-16 relative overflow-hidden" style={{ background: 'linear-gradient(180deg, #030D1A 0%, #041422 50%, #030D1A 100%)' }}>
@@ -172,7 +172,7 @@ export default function ClientsMarquee() {
           </span>
         </h2>
         <p className="max-w-lg mx-auto" style={{ color: 'rgba(150,200,255,0.7)' }}>
-          Proudly serving businesses, restaurants, offices, and institutions across Pakistan.
+          Businesses, restaurants, offices and institutions in Gujranwala that serve One Water.
         </p>
       </div>
 
@@ -198,13 +198,6 @@ export default function ClientsMarquee() {
         </div>
       </div>
 
-      {/* Empty state */}
-      {!isLoading && clients.length === 0 && (
-        <div className="text-center py-8">
-          <Building2 className="w-12 h-12 text-muted-foreground/40 mx-auto mb-3" />
-          <p className="text-muted-foreground text-sm">No featured clients yet. Add them from the admin panel.</p>
-        </div>
-      )}
     </section>
   );
 }

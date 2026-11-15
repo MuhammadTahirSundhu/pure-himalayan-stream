@@ -1,144 +1,99 @@
-import { Button } from '@/components/ui/button';
-import { useCart } from '@/contexts/CartContext';
-import { Tag, Clock, Gift, Percent, Zap } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
+import { Link } from 'react-router-dom';
+import { Tag, Percent, Clock, Check, Copy } from 'lucide-react';
 import { useOffers } from '@/hooks/useOffers';
-
-const CYAN = '#00d4ff';
-
-function FadeIn({ children, delay = 0, className = '' }: { children: React.ReactNode; delay?: number; className?: string }) {
-  const ref = useRef<HTMLDivElement>(null);
-  const [vis, setVis] = useState(false);
-  useEffect(() => {
-    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) { setVis(true); obs.disconnect(); } }, { threshold: 0.1 });
-    if (ref.current) obs.observe(ref.current);
-    return () => obs.disconnect();
-  }, []);
-  return (
-    <div ref={ref} className={className} style={{ opacity: vis ? 1 : 0, transform: vis ? 'translateY(0)' : 'translateY(24px)', transition: `opacity 0.7s ease ${delay}ms, transform 0.7s ease ${delay}ms` }}>
-      {children}
-    </div>
-  );
-}
+import { useCart } from '@/contexts/CartContext';
+import { pkr } from '@/lib/pricing';
+import PageHero from '@/components/site/PageHero';
+import Reveal from '@/components/Reveal';
+import Seo from '@/components/site/Seo';
 
 export default function Offers() {
-  const { addItem } = useCart();
-  const { data: offers = [], isLoading } = useOffers();
+  const { data: offers = [], isLoading, error } = useOffers();
+  const { applyPromo, promo } = useCart();
+  const [msg, setMsg] = useState<Record<string, string>>({});
+
+  const apply = async (code: string) => {
+    const err = await applyPromo(code);
+    setMsg((m) => ({ ...m, [code]: err ?? 'applied' }));
+  };
 
   return (
-    <div className="min-h-screen" style={{ background: '#030D1A' }}>
-      {/* Hero */}
-      <section className="relative py-16 overflow-hidden" style={{ background: 'linear-gradient(180deg, #000f20, #030D1A)' }}>
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-48 pointer-events-none"
-          style={{ background: 'radial-gradient(ellipse, rgba(0,212,255,0.08) 0%, transparent 70%)' }} />
-        <div className="container mx-auto px-4 text-center relative">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full mb-5"
-            style={{ background: 'rgba(0,212,255,0.08)', border: '1px solid rgba(0,212,255,0.2)' }}>
-            <Tag className="w-4 h-4" style={{ color: CYAN }} />
-            <span className="text-sm font-medium" style={{ color: CYAN }}>Exclusive Deals</span>
-          </div>
-          <h1 className="font-heading font-black text-4xl md:text-5xl text-white mb-4">
-            Special{' '}
-            <span style={{ background: 'linear-gradient(135deg, #00d4ff, #3b82f6)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
-              Offers
-            </span>
-          </h1>
-          <p className="max-w-lg mx-auto text-lg" style={{ color: 'rgba(150,200,255,0.7)' }}>
-            Exclusive deals on premium Himalayan water. Use promo codes at checkout!
-          </p>
-        </div>
-      </section>
+    <div className="ow-page">
+      <Seo
+        title="Water Delivery Offers & Promo Codes | One Water Gujranwala"
+        description="Current One Water promo codes and offers for mineral water delivery in Gujranwala. Apply a code to your cart in one tap."
+        path="/offers"
+      />
+      <PageHero
+        eyebrow={<><Tag className="w-4 h-4" /> Current offers</>}
+        title={<>Save on <span className="ow-gradient-text">every refill</span></>}
+        subtitle="Tap “Apply to my cart” and the discount is added at checkout. Discounts apply to water, not the refundable bottle deposit."
+      />
 
-      {/* Offers Grid */}
-      <section className="py-12">
+      <section className="py-12 pb-20">
         <div className="container mx-auto px-4 max-w-5xl">
           {isLoading ? (
-            <div className="grid sm:grid-cols-2 gap-6">
-              {[1, 2, 3, 4].map(i => (
-                <div key={i} className="h-[350px] rounded-2xl animate-pulse" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(0,212,255,0.1)' }} />
-              ))}
+            <div className="grid sm:grid-cols-2 gap-6">{[1, 2].map((i) => <div key={i} className="h-72 ow-card animate-pulse" />)}</div>
+          ) : error || !offers.length ? (
+            <div className="ow-card p-10 text-center max-w-xl mx-auto">
+              <Tag className="w-10 h-10 ow-cyan mx-auto mb-3" />
+              <h2 className="font-heading font-bold text-xl text-white mb-2">No offers running right now</h2>
+              <p className="ow-muted mb-5">Check back soon — or order now at our regular prices with free delivery in Gujranwala.</p>
+              <Link to="/products" className="ow-btn">See products</Link>
             </div>
           ) : (
             <div className="grid sm:grid-cols-2 gap-6">
-              {offers.map((offer, i) => (
-                <FadeIn key={offer.id} delay={i * 100}>
-                <div
-                  className="rounded-2xl overflow-hidden h-full flex flex-col group transition-all duration-400"
-                  style={{
-                    background: 'rgba(255,255,255,0.03)',
-                    border: '1px solid rgba(0,212,255,0.12)',
-                    backdropFilter: 'blur(12px)',
-                  }}
-                  onMouseEnter={e => {
-                    (e.currentTarget as HTMLElement).style.borderColor = 'rgba(0,212,255,0.35)';
-                    (e.currentTarget as HTMLElement).style.background = 'rgba(0,212,255,0.05)';
-                    (e.currentTarget as HTMLElement).style.transform = 'translateY(-4px)';
-                    (e.currentTarget as HTMLElement).style.boxShadow = '0 10px 30px rgba(0,212,255,0.15)';
-                  }}
-                  onMouseLeave={e => {
-                    (e.currentTarget as HTMLElement).style.borderColor = 'rgba(0,212,255,0.12)';
-                    (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.03)';
-                    (e.currentTarget as HTMLElement).style.transform = 'translateY(0)';
-                    (e.currentTarget as HTMLElement).style.boxShadow = 'none';
-                  }}
-                >
-                  <div className="p-6 flex flex-col flex-grow relative overflow-hidden">
-                    {/* Background glow behind image */}
-                    <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full opacity-20 pointer-events-none group-hover:opacity-40 transition-opacity"
-                      style={{ background: `radial-gradient(circle, ${CYAN} 0%, transparent 70%)` }} />
-                    
-                    <div className="flex items-start justify-between mb-4 relative z-10">
-                      <div className="space-y-1.5">
-                        <span className="inline-block text-xs px-3 py-1 rounded-full font-medium"
-                          style={{ background: 'rgba(0,212,255,0.1)', color: offer.icon_color || CYAN, border: '1px solid rgba(0,212,255,0.2)' }}>
-                          {offer.badge_text}
-                        </span>
-                        <h3 className="font-heading font-bold text-xl text-white">{offer.title}</h3>
-                      </div>
-                      <div className="w-16 h-16 shrink-0 ml-4 drop-shadow-2xl">
-                        <img src={offer.image_url} alt="" className="w-full h-full object-contain filter group-hover:scale-110 transition-transform" />
-                      </div>
-                    </div>
-
-                    <p className="text-sm leading-relaxed mb-6 flex-grow" style={{ color: 'rgba(150,200,255,0.7)' }}>
-                      {offer.description}
-                    </p>
-
-                    <div className="mt-auto space-y-4 relative z-10">
-                      <div className="flex items-center justify-between">
-                        {offer.original_price > 0 ? (
-                          <div className="flex items-center gap-3">
-                            <span className="text-sm line-through decoration-red-500/50" style={{ color: 'rgba(150,200,255,0.4)' }}>
-                              PKR {offer.original_price}
-                            </span>
-                            <span className="font-heading font-bold text-2xl text-white">
-                              PKR {offer.sale_price}
-                            </span>
-                          </div>
-                        ) : (
-                          <span className="font-heading font-bold text-xl text-white">Discount applies at checkout</span>
-                        )}
-                        <span className="text-sm font-bold flex items-center gap-1" style={{ color: CYAN }}>
-                          <Percent className="w-4 h-4" /> {offer.discount_text}
-                        </span>
-                      </div>
-
-                      <div className="flex items-center justify-between p-3 rounded-xl border border-dashed"
-                        style={{ background: 'rgba(0,0,0,0.2)', borderColor: 'rgba(0,212,255,0.3)' }}>
-                        <div className="flex items-center gap-2">
-                          <Tag className="w-4 h-4" style={{ color: CYAN }} />
-                          <span className="text-xs" style={{ color: 'rgba(150,200,255,0.6)' }}>Promo Code:</span>
+              {offers.map((offer, i) => {
+                const state = msg[offer.promo_code];
+                const isApplied = promo?.code === offer.promo_code;
+                return (
+                  <Reveal key={offer.id} delay={i * 100}>
+                    <article className="group ow-card ow-card-hover h-full p-6 flex flex-col relative overflow-hidden">
+                      <div aria-hidden className="absolute -top-10 -right-10 w-40 h-40 rounded-full opacity-20 group-hover:opacity-40 transition-opacity" style={{ background: 'radial-gradient(circle, #00d4ff 0%, transparent 70%)' }} />
+                      <div className="flex items-start justify-between mb-4 relative">
+                        <div className="space-y-2">
+                          {offer.badge_text && <span className="inline-block text-xs px-3 py-1 rounded-full font-medium ow-cyan" style={{ background: 'rgba(0,212,255,0.1)', border: '1px solid rgba(0,212,255,0.2)' }}>{offer.badge_text}</span>}
+                          <h2 className="font-heading font-bold text-xl text-white">{offer.title}</h2>
                         </div>
-                        <code className="font-mono font-bold text-base tracking-wider" style={{ color: CYAN }}>
-                          {offer.promo_code}
-                        </code>
+                        {offer.image_url && <img src={offer.image_url} alt={`${offer.title} — One Water`} loading="lazy" className="w-16 h-16 object-contain shrink-0 ml-4 transition-transform group-hover:scale-110" />}
                       </div>
-                    </div>
-                  </div>
-                </div>
-              </FadeIn>
-            ))}
-          </div>
+                      <p className="text-sm leading-relaxed mb-6 flex-grow ow-muted">{offer.description}</p>
+                      <div className="space-y-3 relative">
+                        <div className="flex items-center justify-between">
+                          {offer.original_price > 0 ? (
+                            <span className="flex items-center gap-3">
+                              <s className="text-sm ow-subtle">{pkr(offer.original_price)}</s>
+                              <span className="font-heading font-bold text-2xl text-white">{pkr(offer.sale_price)}</span>
+                            </span>
+                          ) : <span className="text-sm ow-muted">Discount applied at checkout</span>}
+                          <span className="text-sm font-bold flex items-center gap-1 ow-cyan"><Percent className="w-4 h-4" /> {offer.discount_text}</span>
+                        </div>
+                        {(offer.expires_at || offer.min_order_amount) && (
+                          <p className="text-xs ow-subtle flex items-center gap-1.5">
+                            <Clock className="w-3.5 h-3.5" />
+                            {offer.expires_at && `Valid until ${new Date(offer.expires_at).toLocaleDateString('en-PK', { day: 'numeric', month: 'short', year: 'numeric' })}`}
+                            {offer.expires_at && offer.min_order_amount ? ' · ' : ''}
+                            {offer.min_order_amount ? `Min. order ${pkr(offer.min_order_amount)}` : ''}
+                          </p>
+                        )}
+                        {offer.promo_code && (
+                          <div className="flex items-center gap-2">
+                            <code className="flex-1 font-mono font-bold tracking-wider ow-cyan px-3 py-2.5 rounded-xl border border-dashed" style={{ borderColor: 'rgba(0,212,255,0.35)', background: 'rgba(0,0,0,0.2)' }}>
+                              {offer.promo_code}
+                            </code>
+                            <button className="ow-btn !py-2.5 !px-4 text-sm" onClick={() => apply(offer.promo_code)} disabled={isApplied}>
+                              {isApplied ? <><Check className="w-4 h-4" /> Applied</> : <><Copy className="w-4 h-4" /> Apply to my cart</>}
+                            </button>
+                          </div>
+                        )}
+                        {state && state !== 'applied' && <p className="ow-error">{state}</p>}
+                      </div>
+                    </article>
+                  </Reveal>
+                );
+              })}
+            </div>
           )}
         </div>
       </section>

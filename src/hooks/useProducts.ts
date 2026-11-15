@@ -1,15 +1,13 @@
 import { useQuery } from '@tanstack/react-query';
-import { Product } from '@/data/products';
-
-const API_URL = import.meta.env.VITE_API_URL || '';
-
-// Temporary mapping for local image resolution
+import { api } from '@/lib/api';
+import type { Product } from '@/lib/types';
 import bottle300 from '@/assets/brand/bottle-300ml.png';
 import bottle500 from '@/assets/brand/bottle-500ml.png';
 import bottle1000 from '@/assets/brand/bottle-1000ml.png';
 import bottle1500 from '@/assets/brand/bottle-1500ml.png';
 import bottle19l from '@/assets/brand/bottle-19l.png';
 
+// Seeded products reference bundled images by file name; admin uploads are full URLs.
 const imageMap: Record<string, string> = {
   'bottle-300ml.png': bottle300,
   'bottle-500ml.png': bottle500,
@@ -18,20 +16,30 @@ const imageMap: Record<string, string> = {
   'bottle-19l.png': bottle19l,
 };
 
+interface ApiProduct { id: string; name: string; size: string; price: string | number; description: string | null; image_url: string | null; category: 'bottle' | 'dispenser'; in_stock: boolean }
+
 export function useProducts() {
   return useQuery({
     queryKey: ['products'],
-    queryFn: async () => {
-      const response = await fetch(`${API_URL}/api/products`);
-      if (!response.ok) throw new Error('Failed to fetch products');
-      const data: Product[] = await response.json();
-      
-      // Map string image_url to actual local Vite image reference
-      return data.map((p: any) => ({
-        ...p,
+    staleTime: 5 * 60 * 1000,
+    queryFn: async (): Promise<Product[]> => {
+      const data = await api<ApiProduct[]>('/api/products');
+      return data.map((p) => ({
+        id: p.id,
+        name: p.name,
+        size: p.size,
+        price: Number(p.price),
+        description: p.description ?? '',
+        category: p.category,
         inStock: p.in_stock,
-        image: imageMap[p.image_url as unknown as string] || p.image_url
+        image: (p.image_url && imageMap[p.image_url]) || p.image_url || (p.category === 'dispenser' ? bottle19l : bottle500),
       }));
-    }
+    },
   });
 }
+
+/** The returnable 19L product, if the catalogue has one. */
+export const useDispenserProduct = () => {
+  const q = useProducts();
+  return { ...q, product: q.data?.find((p) => p.category === 'dispenser' && p.inStock) };
+};

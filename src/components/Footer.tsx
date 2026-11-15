@@ -1,9 +1,12 @@
 import { Link } from 'react-router-dom';
-import { Droplets, Phone, Mail, MapPin, MessageCircle, ArrowRight } from 'lucide-react';
+import { Droplets, Phone, Mail, MapPin, MessageCircle, ArrowRight, Clock } from 'lucide-react';
+import { useSiteSettings, whatsappLink, telLink } from '@/hooks/useSiteSettings';
 
 const CYAN = '#00d4ff';
 
 export default function Footer() {
+  const { settings } = useSiteSettings();
+  const c = settings.contact_info;
   return (
     <footer
       className="relative overflow-hidden"
@@ -43,11 +46,11 @@ export default function Footer() {
               </span>
             </div>
             <p className="text-sm leading-relaxed mb-5" style={{ color: 'rgba(150,200,255,0.65)' }}>
-              Pure Himalayan mineral water from Pakistan's pristine northern glaciers.
-              PSQCA certified. Eco-friendly. Trusted by thousands.
+              10-stage purified, PCRWR lab-tested mineral water from our own plant in Gujranwala —
+              delivered to homes, offices and events across the city.
             </p>
             <a
-              href="https://wa.me/+923203133140?text=Hi%20One%20Water!"
+              href={whatsappLink(c.whatsapp, 'Hi One Water!')}
               target="_blank" rel="noopener noreferrer"
               className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200"
               style={{ background: 'rgba(0,212,255,0.1)', border: '1px solid rgba(0,212,255,0.25)', color: CYAN }}
@@ -65,7 +68,7 @@ export default function Footer() {
               {[
                 { to: '/products', label: 'Products'       },
                 { to: '/quality',  label: 'Quality & Purity'},
-                { to: '/offers',   label: 'Special Offers'  },
+                { to: '/contact#waitlist', label: 'Bring us to your city' },
                 { to: '/about',    label: 'About Us'        },
               ].map(link => (
                 <Link
@@ -89,7 +92,7 @@ export default function Footer() {
               {[
                 { to: '/delivery', label: '19L Home Delivery'},
                 { to: '/events',   label: 'Bulk & Events'    },
-                { to: '/checkout', label: 'Order Now'         },
+                { to: '/offers',   label: 'Offers'            },
                 { to: '/contact',  label: 'Contact Us'        },
               ].map(link => (
                 <Link
@@ -111,8 +114,8 @@ export default function Footer() {
             <h4 className="font-heading font-semibold text-white mb-5">Contact</h4>
             <div className="flex flex-col gap-3">
               {[
-                { icon: Phone,  href: 'tel:+923203133140',        text: '0320 313 3140' },
-                { icon: Mail,   href: 'mailto:onewater.pk@gmail.com',  text: 'onewater.pk@gmail.com' },
+                { icon: Phone,  href: telLink(c.phone),   text: c.phone },
+                { icon: Mail,   href: `mailto:${c.email}`, text: c.email },
               ].map((item, i) => (
                 <a
                   key={i}
@@ -128,8 +131,14 @@ export default function Footer() {
               ))}
               <div className="flex items-start gap-2.5 text-sm" style={{ color: 'rgba(150,200,255,0.65)' }}>
                 <MapPin className="w-4 h-4 mt-0.5 shrink-0" style={{ color: CYAN }} />
-                <span>One Water – Green Valley Phase 1, near Sialkot Bypass, Gujranwala</span>
+                <span>{c.address}</span>
               </div>
+              {c.hours && (
+                <div className="flex items-start gap-2.5 text-sm" style={{ color: 'rgba(150,200,255,0.65)' }}>
+                  <Clock className="w-4 h-4 mt-0.5 shrink-0" style={{ color: CYAN }} />
+                  <span>{c.hours}</span>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -142,7 +151,7 @@ export default function Footer() {
           <p>© {new Date().getFullYear()} One Water Pakistan. All rights reserved.</p>
           <div className="flex items-center gap-1" style={{ color: CYAN, opacity: 0.6 }}>
             <Droplets className="w-3 h-3" />
-            <span className="text-xs">Pure · Transparent · Pakistani</span>
+            <span className="text-xs">Quality is our Identity</span>
           </div>
         </div>
       </div>

@@ -1,22 +1,39 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { adminToken, ADMIN_LOGOUT_EVENT } from '@/lib/api';
 import AdminLogin from './AdminLogin';
 import AdminPanel from './AdminPanel';
 
 export default function Admin() {
-  // Check for JWT token instead of the old plaintext boolean flag
-  const [loggedIn, setLoggedIn] = useState(
-    () => !!localStorage.getItem('ow_admin_token')
-  );
+  const [loggedIn, setLoggedIn] = useState(() => !!adminToken.get());
+  const [notice, setNotice] = useState('');
 
-  const handleLogout = () => {
-    localStorage.removeItem('ow_admin_token');
-    localStorage.removeItem('ow_admin_user');
+  // Keep the admin area out of search engines while it is mounted.
+  useEffect(() => {
+    const meta = document.createElement('meta');
+    meta.name = 'robots';
+    meta.content = 'noindex';
+    document.head.appendChild(meta);
+    return () => { meta.remove(); };
+  }, []);
+
+  // Any admin call returning 401 (expired / revoked token) lands here.
+  useEffect(() => {
+    const onExpired = () => {
+      setLoggedIn(false);
+      setNotice('Your session has expired. Please log in again.');
+    };
+    window.addEventListener(ADMIN_LOGOUT_EVENT, onExpired);
+    return () => window.removeEventListener(ADMIN_LOGOUT_EVENT, onExpired);
+  }, []);
+
+  const logout = (message = '') => {
+    adminToken.clear();
+    setNotice(message);
     setLoggedIn(false);
   };
 
   if (!loggedIn) {
-    return <AdminLogin onLogin={() => setLoggedIn(true)} />;
+    return <AdminLogin notice={notice} onLogin={() => { setNotice(''); setLoggedIn(true); }} />;
   }
-
-  return <AdminPanel onLogout={handleLogout} />;
+  return <AdminPanel onLogout={logout} />;
 }

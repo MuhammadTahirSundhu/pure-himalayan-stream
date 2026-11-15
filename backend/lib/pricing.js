@@ -50,7 +50,7 @@ export function priceOrder({ items, products, delivery, promo = null }) {
     if (subtotal < min) {
       throw Object.assign(new Error(`Promo ${promo.code} needs a minimum order of PKR ${min}.`), { code: 'PromoMinimum' });
     }
-    discount = round(subtotal * Number(promo.discount_percentage) / 100);
+    discount = Math.round(subtotal * Number(promo.discount_percentage) / 100); // whole rupees
   }
 
   const delivery_fee =

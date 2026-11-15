@@ -1,267 +1,175 @@
-import { useState, useEffect, useRef } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Calculator, Users, Calendar, MapPin, Tag, Heart, Sparkles } from 'lucide-react';
+import { useState } from 'react';
+import { Calculator, Users, Sparkles, Tag, Building2, PartyPopper, CheckCircle2, Send } from 'lucide-react';
+import { api, ApiError } from '@/lib/api';
+import { pkr } from '@/lib/pricing';
+import { useProducts } from '@/hooks/useProducts';
+import { useSiteSettings, whatsappLink } from '@/hooks/useSiteSettings';
+import PageHero from '@/components/site/PageHero';
+import Reveal from '@/components/Reveal';
+import Seo from '@/components/site/Seo';
+import WhatsAppIcon from '@/components/site/WhatsAppIcon';
 
-const API_URL = import.meta.env.VITE_API_URL || '';
-const CYAN = '#00d4ff';
+const EVENT_TYPES = [
+  { id: 'wedding', label: 'Wedding / Walima', perGuest: 3 },
+  { id: 'corporate', label: 'Corporate / Office', perGuest: 2 },
+  { id: 'religious', label: 'Religious gathering', perGuest: 2 },
+  { id: 'school', label: 'School / Sports', perGuest: 2 },
+  { id: 'other', label: 'Other', perGuest: 2 },
+];
 
-function FadeIn({ children, delay = 0, className = '' }: { children: React.ReactNode; delay?: number; className?: string }) {
-  const ref = useRef<HTMLDivElement>(null);
-  const [vis, setVis] = useState(false);
-  useEffect(() => {
-    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) { setVis(true); obs.disconnect(); } }, { threshold: 0.1 });
-    if (ref.current) obs.observe(ref.current);
-    return () => obs.disconnect();
-  }, []);
-  return (
-    <div ref={ref} className={className} style={{ opacity: vis ? 1 : 0, transform: vis ? 'translateY(0)' : 'translateY(24px)', transition: `opacity 0.7s ease ${delay}ms, transform 0.7s ease ${delay}ms` }}>
-      {children}
-    </div>
-  );
-}
-
-const inputStyle: React.CSSProperties = {
-  width: '100%', padding: '12px 16px', borderRadius: '12px', outline: 'none',
-  background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(0,212,255,0.2)',
-  color: '#fff', fontSize: '14px', transition: 'border-color 0.2s, box-shadow 0.2s',
-};
+const EMPTY_FORM = { name: '', phone: '', email: '', event_date: '', event_location: '', bottle_size: '', quantity: '', notes: '' };
 
 export default function Events() {
-  const [guests, setGuests] = useState('');
-  const [eventType, setEventType] = useState('');
-  const [quote, setQuote] = useState<{ bottles: number; price: number } | null>(null);
+  const { data: products = [] } = useProducts();
+  const { settings } = useSiteSettings();
+  const bottles = products.filter((p) => p.category === 'bottle' && p.inStock);
 
-  // Inquiry Form State
-  const [name, setName] = useState('');
-  const [phone, setPhone] = useState('');
-  const [email, setEmail] = useState('');
-  const [date, setDate] = useState('');
-  const [location, setLocation] = useState('');
-  const [bottleSize, setBottleSize] = useState('');
-  const [quantity, setQuantity] = useState('');
-  const [notes, setNotes] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [statusMsg, setStatusMsg] = useState('');
+  const [guests, setGuests] = useState(150);
+  const [eventType, setEventType] = useState('wedding');
+  const [sizeId, setSizeId] = useState('');
+  const size = bottles.find((b) => b.id === sizeId) ?? bottles.find((b) => b.id === '500ml') ?? bottles[0];
+  const perGuest = EVENT_TYPES.find((t) => t.id === eventType)?.perGuest ?? 2;
+  const estimateBottles = guests * perGuest;
 
-  const calculateQuote = () => {
-    const g = parseInt(guests) || 0;
-    const bottlesPerPerson = eventType === 'wedding' ? 3 : eventType === 'corporate' ? 2 : 2;
-    const bottles = g * bottlesPerPerson;
-    const pricePerBottle = bottles >= 100 ? 40 : 50;
-    setQuote({ bottles, price: bottles * pricePerBottle });
+  const [form, setForm] = useState(EMPTY_FORM);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [status, setStatus] = useState<'idle' | 'sending' | 'sent'>('idle');
+  const [error, setError] = useState('');
+
+  const applyEstimate = () => {
+    setForm((f) => ({
+      ...f,
+      bottle_size: size?.size ?? f.bottle_size,
+      quantity: String(estimateBottles),
+      notes: f.notes || `${EVENT_TYPES.find((t) => t.id === eventType)?.label}, about ${guests} guests.`,
+    }));
+    document.getElementById('inquiry')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
-  const handleSubmit = async () => {
-    if (!name || !phone) {
-      setStatusMsg('Name and Phone are required.');
-      return;
-    }
-    setLoading(true);
-    setStatusMsg('');
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setStatus('sending'); setError(''); setErrors({});
     try {
-      const res = await fetch(`${API_URL}/api/events`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name, phone, email, event_date: date, event_location: location,
-          bottle_size: bottleSize, quantity, notes
-        })
-      });
-      const data = await res.json();
-      if (res.ok) {
-        setStatusMsg('✅ Inquiry submitted successfully! We will contact you soon.');
-        setName(''); setPhone(''); setEmail(''); setDate(''); setLocation('');
-        setBottleSize(''); setQuantity(''); setNotes('');
-      } else {
-        setStatusMsg(`❌ Error: ${data.message || 'Failed to submit'}`);
-      }
+      await api('/api/events', { method: 'POST', json: { ...form, event_type: EVENT_TYPES.find((t) => t.id === eventType)?.label } });
+      setStatus('sent');
+      setForm(EMPTY_FORM);
     } catch (err) {
-      setStatusMsg('❌ Network error. Please try again later.');
-    } finally {
-      setLoading(false);
+      setStatus('idle');
+      if (err instanceof ApiError) { setErrors(err.fieldErrors); setError(err.message); }
     }
   };
+
+  const field = (k: keyof typeof EMPTY_FORM) => ({
+    id: `ev-${k}`, className: 'ow-input', value: form[k], 'aria-invalid': !!errors[k],
+    onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => setForm({ ...form, [k]: e.target.value }),
+  });
 
   return (
-    <div className="min-h-screen" style={{ background: '#030D1A' }}>
-      {/* Hero */}
-      <section className="relative py-16 overflow-hidden" style={{ background: 'linear-gradient(180deg, #000f20, #030D1A)' }}>
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] pointer-events-none"
-          style={{ background: 'radial-gradient(circle, rgba(0,212,255,0.06) 0%, transparent 60%)' }} />
-        <div className="container mx-auto px-4 text-center relative">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full mb-5"
-            style={{ background: 'rgba(0,212,255,0.08)', border: '1px solid rgba(0,212,255,0.2)' }}>
-            <Sparkles className="w-4 h-4" style={{ color: CYAN }} />
-            <span className="text-sm font-medium" style={{ color: CYAN }}>Premium Hydration</span>
-          </div>
-          <h1 className="font-heading font-black text-4xl md:text-5xl text-white mb-4">
-            Events &{' '}
-            <span style={{ background: 'linear-gradient(135deg, #00d4ff, #3b82f6)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
-              Bulk Orders
-            </span>
-          </h1>
-          <p className="max-w-lg mx-auto text-lg" style={{ color: 'rgba(150,200,255,0.7)' }}>
-            Premium hydration for weddings, corporate events, and community gatherings. Custom labels available!
-          </p>
-        </div>
-      </section>
+    <div className="ow-page">
+      <Seo
+        title="Bulk Water for Events, Weddings & Offices in Gujranwala | One Water"
+        description="Bulk mineral water bottles for weddings, corporate events, schools and gatherings in Gujranwala. Get an instant estimate and a quote on WhatsApp."
+        path="/events"
+      />
+      <PageHero
+        eyebrow={<><Sparkles className="w-4 h-4" /> Events & Bulk Orders</>}
+        title={<>Water for every <span className="ow-gradient-text">guest, desk & gathering</span></>}
+        subtitle="Weddings, offices, schools, religious gatherings — tell us the size of your event and we'll handle the water."
+      />
 
-      {/* Main Content */}
       <section className="py-12">
-        <div className="container mx-auto px-4">
-          <div className="grid lg:grid-cols-2 gap-12 max-w-5xl mx-auto">
-            
-            {/* Left Column */}
-            <div>
-              <FadeIn delay={100}>
-                <h2 className="font-heading font-bold text-xl text-white mb-6 flex items-center gap-2">
-                  <Calculator className="w-5 h-5" style={{ color: CYAN }} /> Smart Quote Calculator
-                </h2>
-                <div className="rounded-2xl p-6 space-y-5"
-                  style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(0,212,255,0.15)', backdropFilter: 'blur(12px)' }}>
-                  
-                  <div>
-                    <label className="text-sm font-medium text-white mb-2 block">
-                      <Users className="w-4 h-4 inline mr-1" /> Number of Guests
-                    </label>
-                    <input
-                      type="number" min="1" value={guests} onChange={e => setGuests(e.target.value)}
-                      placeholder="e.g. 200"
-                      style={inputStyle}
-                      onFocus={e => { e.currentTarget.style.borderColor = 'rgba(0,212,255,0.5)'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(0,212,255,0.1)'; }}
-                      onBlur={e => { e.currentTarget.style.borderColor = 'rgba(0,212,255,0.2)'; e.currentTarget.style.boxShadow = 'none'; }}
-                    />
-                  </div>
-
-                  <div>
-                    <label className="text-sm font-medium text-white mb-2 block">
-                      <Calendar className="w-4 h-4 inline mr-1" /> Event Type
-                    </label>
-                    <select
-                      value={eventType} onChange={e => setEventType(e.target.value)}
-                      style={{ ...inputStyle, appearance: 'none', cursor: 'pointer' }}
-                      className="bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%2300d4ff%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E')] bg-no-repeat bg-[length:12px_auto] bg-[position:right_16px_center]"
-                    >
-                      <option value="" disabled style={{ background: '#030D1A' }}>Select event type</option>
-                      <option value="wedding" style={{ background: '#030D1A' }}>Wedding</option>
-                      <option value="corporate" style={{ background: '#030D1A' }}>Corporate Event</option>
-                      <option value="community" style={{ background: '#030D1A' }}>Community Gathering</option>
-                      <option value="other" style={{ background: '#030D1A' }}>Other</option>
-                    </select>
-                  </div>
-
-                  <button
-                    onClick={calculateQuote}
-                    className="w-full py-3.5 rounded-xl font-bold text-white transition-all duration-300"
-                    style={{ background: 'linear-gradient(135deg, #00d4ff, #0284c7)', boxShadow: '0 0 20px rgba(0,212,255,0.25)' }}
-                    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.boxShadow = '0 0 30px rgba(0,212,255,0.4)'; }}
-                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.boxShadow = '0 0 20px rgba(0,212,255,0.25)'; }}
-                  >
-                    Calculate Quote
-                  </button>
-
-                  {quote && (
-                    <div className="mt-4 p-4 rounded-xl border animate-in fade-in slide-in-from-top-2"
-                      style={{ background: 'rgba(0,212,255,0.05)', border: '1px solid rgba(0,212,255,0.2)' }}>
-                      <h3 className="font-heading font-semibold text-white mb-2">Estimated Quote</h3>
-                      <div className="flex justify-between text-sm mb-1">
-                        <span style={{ color: 'rgba(150,200,255,0.7)' }}>Recommended Bottles (500ml)</span>
-                        <span className="font-semibold text-white">{quote.bottles}</span>
-                      </div>
-                      <div className="flex justify-between items-center text-sm">
-                        <span style={{ color: 'rgba(150,200,255,0.7)' }}>Estimated Price</span>
-                        <span className="font-heading font-bold text-xl" style={{ color: CYAN }}>PKR {quote.price.toLocaleString()}</span>
-                      </div>
-                      <p className="text-xs mt-2" style={{ color: 'rgba(150,200,255,0.5)' }}>* Includes bulk discount for orders 100+ bottles</p>
-                    </div>
-                  )}
-                </div>
-              </FadeIn>
-
-              {/* Extras */}
-              <FadeIn delay={200}>
-                <div className="mt-6 rounded-2xl p-6" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(0,212,255,0.1)' }}>
-                  <h3 className="font-heading font-bold text-white mb-2 flex items-center gap-2">
-                    <Tag className="w-5 h-5" style={{ color: CYAN }} /> Custom Label Printing
-                  </h3>
-                  <p className="text-sm mb-4" style={{ color: 'rgba(150,200,255,0.7)' }}>
-                    Add your event name, logo, or message on every bottle. Minimum order: 100 bottles.
-                  </p>
-                  <button className="px-5 py-2 rounded-lg font-medium transition-colors text-sm"
-                    style={{ background: 'rgba(0,212,255,0.1)', color: CYAN, border: '1px solid rgba(0,212,255,0.3)' }}
-                    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(0,212,255,0.2)'; }}
-                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(0,212,255,0.1)'; }}>
-                    Request Custom Labels
-                  </button>
-                </div>
-              </FadeIn>
-
-              <FadeIn delay={300}>
-                <div className="mt-6 rounded-2xl p-6" style={{ background: 'rgba(16,185,129,0.05)', border: '1px solid rgba(16,185,129,0.2)' }}>
-                  <h3 className="font-heading font-bold text-emerald-400 mb-2 flex items-center gap-2">
-                    <Heart className="w-5 h-5" /> Ramadan Charity Donations
-                  </h3>
-                  <p className="text-sm" style={{ color: 'rgba(150,200,255,0.7)' }}>
-                    Donate clean water to underprivileged communities this Ramadan. 
-                    We match every 10 bottles donated with 5 more from us.
-                  </p>
-                </div>
-              </FadeIn>
-            </div>
-
-            {/* Right Column: Inquiry Form */}
-            <div>
-              <FadeIn delay={150}>
-                <h2 className="font-heading font-bold text-xl text-white mb-6 flex items-center gap-2">
-                  <MapPin className="w-5 h-5" style={{ color: CYAN }} /> Event Inquiry Form
-                </h2>
-                <div className="rounded-2xl p-6 space-y-4"
-                  style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(0,212,255,0.15)', backdropFilter: 'blur(12px)' }}>
-                  
-                  <input placeholder="Full Name *" value={name} onChange={e => setName(e.target.value)} style={inputStyle} />
-                  <input placeholder="Phone Number *" value={phone} onChange={e => setPhone(e.target.value)} style={inputStyle} />
-                  <input placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} style={inputStyle} />
-                  
-                  <input type="date" placeholder="Event Date" value={date} onChange={e => setDate(e.target.value)} style={{ ...inputStyle, colorScheme: 'dark' }} />
-                  <input placeholder="Event Location" value={location} onChange={e => setLocation(e.target.value)} style={inputStyle} />
-                  
-                  <select
-                    value={bottleSize} onChange={e => setBottleSize(e.target.value)}
-                    style={{ ...inputStyle, appearance: 'none', cursor: 'pointer' }}
-                    className="bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%2300d4ff%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E')] bg-no-repeat bg-[length:12px_auto] bg-[position:right_16px_center]"
-                  >
-                    <option value="" disabled style={{ background: '#030D1A' }}>Bottle Size</option>
-                    <option value="300ml" style={{ background: '#030D1A' }}>300ml</option>
-                    <option value="500ml" style={{ background: '#030D1A' }}>500ml</option>
-                    <option value="1000ml" style={{ background: '#030D1A' }}>1L</option>
-                    <option value="1500ml" style={{ background: '#030D1A' }}>1.5L</option>
+        <div className="container mx-auto px-4 grid lg:grid-cols-2 gap-10 max-w-5xl">
+          <div className="space-y-6">
+            <Reveal className="ow-card p-6 space-y-5">
+              <h2 className="font-heading font-bold text-xl text-white flex items-center gap-2"><Calculator className="w-5 h-5 ow-cyan" /> Quick estimate</h2>
+              <div>
+                <label className="ow-label" htmlFor="ev-guests"><Users className="w-4 h-4 inline mr-1" /> Number of guests</label>
+                <input id="ev-guests" type="number" min={1} max={20000} className="ow-input" value={guests} onChange={(e) => setGuests(Math.max(0, Number(e.target.value) || 0))} />
+              </div>
+              <div className="grid sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="ow-label" htmlFor="ev-type">Event type</label>
+                  <select id="ev-type" className="ow-input" value={eventType} onChange={(e) => setEventType(e.target.value)}>
+                    {EVENT_TYPES.map((t) => <option key={t.id} value={t.id}>{t.label}</option>)}
                   </select>
-
-                  <input type="number" placeholder="Estimated Quantity" value={quantity} onChange={e => setQuantity(e.target.value)} style={inputStyle} />
-                  <textarea placeholder="Additional Notes (custom labels, delivery timing, etc.)" value={notes} onChange={e => setNotes(e.target.value)} rows={4} style={{ ...inputStyle, resize: 'none' }} />
-                  
-                  {statusMsg && (
-                    <p className={`text-sm ${statusMsg.startsWith('✅') ? 'text-emerald-400' : 'text-red-400'}`}>
-                      {statusMsg}
-                    </p>
-                  )}
-
-                  <button
-                    onClick={handleSubmit} disabled={loading}
-                    className="w-full py-3.5 rounded-xl font-bold text-white transition-all duration-300 mt-2"
-                    style={{ background: 'linear-gradient(135deg, #00d4ff, #0284c7)', boxShadow: '0 0 20px rgba(0,212,255,0.25)', opacity: loading ? 0.7 : 1 }}
-                    onMouseEnter={e => { if(!loading) (e.currentTarget as HTMLElement).style.boxShadow = '0 0 30px rgba(0,212,255,0.4)'; }}
-                    onMouseLeave={e => { if(!loading) (e.currentTarget as HTMLElement).style.boxShadow = '0 0 20px rgba(0,212,255,0.25)'; }}
-                  >
-                    {loading ? 'Submitting...' : 'Submit Inquiry'}
-                  </button>
                 </div>
-              </FadeIn>
-            </div>
+                <div>
+                  <label className="ow-label" htmlFor="ev-size">Bottle size</label>
+                  <select id="ev-size" className="ow-input" value={size?.id ?? ''} onChange={(e) => setSizeId(e.target.value)} disabled={!bottles.length}>
+                    {bottles.map((b) => <option key={b.id} value={b.id}>{b.size} — {pkr(b.price)}</option>)}
+                    {!bottles.length && <option value="">Loading…</option>}
+                  </select>
+                </div>
+              </div>
+              <div className="rounded-xl p-5" style={{ background: 'rgba(0,212,255,0.05)', border: '1px solid rgba(0,212,255,0.2)' }}>
+                <p className="text-sm ow-muted">About <strong className="text-white">{estimateBottles.toLocaleString()} bottles</strong> ({perGuest} per guest)</p>
+                {size && <p className="font-heading font-black text-3xl text-white mt-1">{pkr(estimateBottles * size.price)}</p>}
+                <p className="text-xs ow-subtle mt-1">At regular prices. Bulk orders get a discounted quote — ask us.</p>
+              </div>
+              <button className="ow-btn w-full" onClick={applyEstimate} disabled={!guests}>Use this estimate in my inquiry</button>
+            </Reveal>
+
+            <Reveal delay={100} className="grid sm:grid-cols-2 gap-4">
+              {[
+                { icon: PartyPopper, title: 'Weddings & events', text: 'Bottles delivered to your venue before your guests arrive.' },
+                { icon: Building2, title: 'Offices & schools', text: 'Regular 19L or bottle supply on a schedule that suits you.' },
+              ].map(({ icon: Icon, title, text }) => (
+                <div key={title} className="ow-card ow-card-hover p-5">
+                  <Icon className="w-6 h-6 ow-cyan mb-2" />
+                  <h3 className="font-semibold text-white">{title}</h3>
+                  <p className="text-sm ow-muted">{text}</p>
+                </div>
+              ))}
+            </Reveal>
+
+            <Reveal delay={150} className="ow-card p-6">
+              <h3 className="font-heading font-bold text-white mb-2 flex items-center gap-2"><Tag className="w-5 h-5 ow-cyan" /> Custom labels</h3>
+              <p className="text-sm ow-muted mb-4">Want your event name or company logo on the bottles? Ask us about custom labels and minimum quantities.</p>
+              <a className="ow-btn-whatsapp !py-2.5 text-sm" target="_blank" rel="noopener noreferrer"
+                href={whatsappLink(settings.contact_info.whatsapp, 'Hi One Water, I would like to ask about custom labels on bottles for my event.')}>
+                <WhatsAppIcon className="w-4 h-4" /> Ask about custom labels
+              </a>
+            </Reveal>
           </div>
+
+          <Reveal delay={100}>
+            <div id="inquiry" className="scroll-mt-24">
+              {status === 'sent' ? (
+                <div className="ow-card p-8 text-center space-y-4">
+                  <CheckCircle2 className="w-14 h-14 text-emerald-400 mx-auto" />
+                  <h2 className="font-heading font-bold text-2xl text-white">Inquiry received!</h2>
+                  <p className="ow-muted">We'll contact you on your phone / WhatsApp with a quote during business hours ({settings.contact_info.hours}).</p>
+                  <button className="ow-btn-ghost" onClick={() => setStatus('idle')}>Send another inquiry</button>
+                </div>
+              ) : (
+                <form onSubmit={submit} className="ow-card p-6 space-y-4" noValidate>
+                  <h2 className="font-heading font-bold text-xl text-white">Get a bulk quote</h2>
+                  <div className="grid sm:grid-cols-2 gap-4">
+                    <div><label className="ow-label" htmlFor="ev-name">Your name *</label><input {...field('name')} autoComplete="name" />{errors.name && <p className="ow-error">{errors.name}</p>}</div>
+                    <div><label className="ow-label" htmlFor="ev-phone">Phone / WhatsApp *</label><input {...field('phone')} type="tel" inputMode="tel" placeholder="0300 1234567" />{errors.phone && <p className="ow-error">{errors.phone}</p>}</div>
+                  </div>
+                  <div><label className="ow-label" htmlFor="ev-email">Email (optional)</label><input {...field('email')} type="email" autoComplete="email" />{errors.email && <p className="ow-error">{errors.email}</p>}</div>
+                  <div className="grid sm:grid-cols-2 gap-4">
+                    <div><label className="ow-label" htmlFor="ev-event_date">Event date</label><input {...field('event_date')} type="date" style={{ colorScheme: 'dark' }} /></div>
+                    <div><label className="ow-label" htmlFor="ev-event_location">Venue / area</label><input {...field('event_location')} placeholder="e.g. Marquee on GT Road" /></div>
+                  </div>
+                  <div className="grid sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="ow-label" htmlFor="ev-bottle_size">Bottle size</label>
+                      <select {...field('bottle_size')}>
+                        <option value="">Not sure yet</option>
+                        {products.filter((p) => p.inStock).map((p) => <option key={p.id} value={p.size}>{p.size}</option>)}
+                      </select>
+                    </div>
+                    <div><label className="ow-label" htmlFor="ev-quantity">Quantity</label><input {...field('quantity')} inputMode="numeric" placeholder="e.g. 300" /></div>
+                  </div>
+                  <div><label className="ow-label" htmlFor="ev-notes">Anything else?</label><textarea {...field('notes')} rows={3} placeholder="Delivery time, custom labels, etc." /></div>
+                  {error && !Object.keys(errors).length && <p className="ow-error">{error}</p>}
+                  <button className="ow-btn w-full" disabled={status === 'sending'}><Send className="w-4 h-4" /> {status === 'sending' ? 'Sending…' : 'Request my quote'}</button>
+                </form>
+              )}
+            </div>
+          </Reveal>
         </div>
       </section>
     </div>

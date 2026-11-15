@@ -1,172 +1,119 @@
-import { Button } from '@/components/ui/button';
-import { qualityResults } from '@/data/products';
-import { Table, TableHeader, TableHead, TableBody, TableRow, TableCell } from '@/components/ui/table';
-import { Shield, CheckCircle, Download, Droplets, Sparkles, Award } from 'lucide-react';
+import { CheckCircle2, Download, Droplets, ShieldCheck, Award, FlaskConical, Factory } from 'lucide-react';
+import { qualityResults, labReport } from '@/data/products';
+import { useSiteSettings } from '@/hooks/useSiteSettings';
 import PurificationPipeline from '@/components/PurificationPipeline';
 import Certifications from '@/components/Certifications';
-import { useEffect, useRef, useState } from 'react';
-import labReport from '@/assets/certificates/6.jpeg';
+import PageHero from '@/components/site/PageHero';
+import SectionHeading from '@/components/site/SectionHeading';
+import Reveal from '@/components/Reveal';
+import Seo from '@/components/site/Seo';
+import labReportImage from '@/assets/certificates/6.jpeg';
 
-const CYAN = '#00d4ff';
-
-function FadeIn({ children, delay = 0, className = '' }: { children: React.ReactNode; delay?: number; className?: string }) {
-  const ref = useRef<HTMLDivElement>(null);
-  const [vis, setVis] = useState(false);
-  useEffect(() => {
-    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) { setVis(true); obs.disconnect(); } }, { threshold: 0.1 });
-    if (ref.current) obs.observe(ref.current);
-    return () => obs.disconnect();
-  }, []);
-  return (
-    <div ref={ref} className={className} style={{ opacity: vis ? 1 : 0, transform: vis ? 'translateY(0)' : 'translateY(24px)', transition: `opacity 0.7s ease ${delay}ms, transform 0.7s ease ${delay}ms` }}>
-      {children}
-    </div>
-  );
-}
+const HIGHLIGHTS = [
+  { label: 'pH', value: '7.8', note: 'WHO range 6.5–8.5' },
+  { label: 'TDS', value: '130', note: 'mg/L · WHO limit 1000' },
+  { label: 'Sodium', value: '20', note: 'mg/L · WHO limit 200' },
+  { label: 'E. coli', value: '0', note: 'CFU/100ml' },
+];
 
 export default function Quality() {
+  const { settings } = useSiteSettings();
+  const reportUrl = settings.lab_report_url || labReportImage;
+
   return (
-    <div className="min-h-screen" style={{ background: '#030D1A' }}>
+    <div className="ow-page">
+      <Seo
+        title="Water Quality, Lab Report & 10-Stage Purification | One Water"
+        description="See One Water's PCRWR lab results (pH 7.8, TDS 130 mg/L, zero E. coli), certificates and the 10-stage purification process at our Gujranwala plant."
+        path="/quality"
+      />
+      <PageHero
+        eyebrow={<><ShieldCheck className="w-4 h-4" /> Quality & Purity</>}
+        title={<>Tested, certified, <span className="ow-gradient-text">nothing hidden</span></>}
+        subtitle="One Water is produced at our own plant in Gujranwala. Here is exactly how we purify it — and what the lab found."
+      />
 
-      {/* Hero */}
-      <section className="relative py-20 overflow-hidden" style={{ background: 'linear-gradient(180deg, #000f20, #030D1A)' }}>
-        <svg className="absolute inset-0 w-full h-full opacity-[0.04] pointer-events-none" xmlns="http://www.w3.org/2000/svg">
-          <defs><pattern id="hex-q" x="0" y="0" width="60" height="52" patternUnits="userSpaceOnUse">
-            <polygon points="30,1 58,15 58,37 30,51 2,37 2,15" fill="none" stroke="#00d4ff" strokeWidth="0.8" />
-          </pattern></defs>
-          <rect width="100%" height="100%" fill="url(#hex-q)" />
-        </svg>
-        {/* Orbs */}
-        <div className="absolute top-10 left-10 w-64 h-64 pointer-events-none"
-          style={{ background: 'radial-gradient(circle, rgba(0,212,255,0.07) 0%, transparent 70%)', animation: 'floatOrb 8s ease-in-out infinite alternate' }} />
-        <div className="absolute bottom-10 right-10 w-48 h-48 pointer-events-none"
-          style={{ background: 'radial-gradient(circle, rgba(59,130,246,0.08) 0%, transparent 70%)', animation: 'floatOrb 10s ease-in-out 2s infinite alternate' }} />
-
-        <div className="container mx-auto px-4 relative text-center max-w-3xl mx-auto">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full mb-5"
-            style={{ background: 'rgba(0,212,255,0.08)', border: '1px solid rgba(0,212,255,0.2)' }}>
-            <Sparkles className="w-4 h-4" style={{ color: CYAN }} />
-            <span className="text-sm font-semibold" style={{ color: CYAN }}>PSQCA Certified Purity</span>
+      <section className="py-10">
+        <div className="container mx-auto px-4 max-w-5xl">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {HIGHLIGHTS.map((h, i) => (
+              <Reveal key={h.label} delay={i * 80} className="ow-card ow-card-hover p-5 text-center">
+                <p className="text-xs uppercase tracking-wider ow-subtle">{h.label}</p>
+                <p className="font-heading font-black text-4xl ow-gradient-text my-1">{h.value}</p>
+                <p className="text-xs ow-muted">{h.note}</p>
+              </Reveal>
+            ))}
           </div>
-          <h1 className="font-heading font-black text-4xl md:text-6xl text-white mb-5"
-            style={{ textShadow: '0 0 60px rgba(0,212,255,0.2)' }}>
-            Quality &{' '}
-            <span style={{ background: 'linear-gradient(135deg, #00d4ff, #3b82f6)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
-              Purity
-            </span>
-          </h1>
-          <p className="text-lg" style={{ color: 'rgba(150,200,255,0.7)' }}>
-            Every drop of One Water travels through a meticulous 10-step purification journey,
-            tested rigorously against the highest international standards.
-          </p>
+          <p className="text-center text-xs ow-subtle mt-4">Source: {labReport.lab}, report {labReport.code}, {labReport.reported}.</p>
         </div>
-        <div className="absolute bottom-0 left-0 right-0 h-16 pointer-events-none" style={{ background: 'linear-gradient(to bottom, transparent, #030D1A)' }} />
       </section>
 
-      {/* Purification Pipeline */}
-      <section className="py-20 relative">
+      <section className="py-16">
         <div className="container mx-auto px-4">
-          <FadeIn className="text-center mb-14">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full mb-4"
-              style={{ background: 'rgba(0,212,255,0.08)', border: '1px solid rgba(0,212,255,0.2)' }}>
-              <Droplets className="w-4 h-4" style={{ color: CYAN }} />
-              <span className="text-sm font-medium" style={{ color: CYAN }}>Purification Journey</span>
-            </div>
-            <h2 className="font-heading font-black text-3xl md:text-4xl text-white mb-3">
-              Our{' '}
-              <span style={{ background: 'linear-gradient(135deg, #00d4ff, #3b82f6)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
-                10-Step
-              </span>{' '}Process
-            </h2>
-            <p className="max-w-xl mx-auto" style={{ color: 'rgba(150,200,255,0.7)' }}>
-              From the icy Himalayan glaciers to your hands — follow the path of every drop.
-            </p>
-          </FadeIn>
+          <SectionHeading
+            eyebrow={<><Droplets className="w-4 h-4" /> Purification journey</>}
+            title={<>Our <span className="ow-gradient-text">10-stage</span> process</>}
+            subtitle="Every litre is filtered, purified by reverse osmosis, mineral-balanced and disinfected before it is sealed."
+          />
           <PurificationPipeline />
         </div>
       </section>
 
-      {/* Certifications */}
-      <section style={{ background: 'linear-gradient(180deg, #030D1A 0%, #041422 50%, #030D1A 100%)' }}>
-        <Certifications />
+      <section className="py-12">
+        <div className="container mx-auto px-4 max-w-4xl">
+          <Reveal className="ow-card p-6 md:p-8 flex flex-col md:flex-row gap-6 items-start">
+            <Factory className="w-10 h-10 ow-cyan shrink-0" />
+            <div>
+              <h2 className="font-heading font-bold text-2xl text-white mb-2">Where does One Water come from?</h2>
+              <p className="ow-muted leading-relaxed">
+                We don't bottle mountain springs or glaciers — and we won't pretend to. One Water is purified at our own plant at
+                Green Valley Phase 1, Gujranwala. Reverse osmosis removes impurities, then essential minerals are added back so the
+                water tastes clean and balanced. We publish our independent lab results below so you can judge for yourself.
+              </p>
+            </div>
+          </Reveal>
+        </div>
       </section>
 
-      {/* Lab Results Table */}
+      <div style={{ background: 'linear-gradient(180deg, #030d1a 0%, #041422 50%, #030d1a 100%)' }}>
+        <Certifications />
+      </div>
+
       <section className="py-20">
         <div className="container mx-auto px-4 max-w-4xl">
-          <FadeIn className="text-center mb-10">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full mb-4"
-              style={{ background: 'rgba(0,212,255,0.08)', border: '1px solid rgba(0,212,255,0.2)' }}>
-              <Shield className="w-4 h-4" style={{ color: CYAN }} />
-              <span className="text-sm font-medium" style={{ color: CYAN }}>Independent Testing</span>
-            </div>
-            <h2 className="font-heading font-black text-3xl md:text-4xl text-white mb-3">
-              PSQCA Lab{' '}
-              <span style={{ background: 'linear-gradient(135deg, #00d4ff, #3b82f6)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
-                Results
-              </span>
-            </h2>
-            <p style={{ color: 'rgba(150,200,255,0.7)' }}>
-              Transparent, parameter-by-parameter results — well within all safety limits.
-            </p>
-          </FadeIn>
-
-          <FadeIn>
-            <div className="rounded-2xl overflow-hidden"
-              style={{ border: '1px solid rgba(0,212,255,0.15)', boxShadow: '0 0 40px rgba(0,0,0,0.4)' }}>
-              <Table>
-                <TableHeader>
-                  <TableRow style={{ background: 'linear-gradient(135deg, rgba(0,212,255,0.15), rgba(59,130,246,0.1))' }}>
-                    {['Parameter', 'PSQCA Max', 'Our Result', 'Status'].map((h, i) => (
-                      <TableHead key={i} className={`font-bold text-white ${i === 3 ? 'text-right' : ''}`}>{h}</TableHead>
-                    ))}
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
+          <SectionHeading
+            eyebrow={<><FlaskConical className="w-4 h-4" /> Independent lab test</>}
+            title={<>PCRWR <span className="ow-gradient-text">lab results</span></>}
+            subtitle={`“${labReport.remark}” — ${labReport.lab}`}
+          />
+          <Reveal className="ow-card overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr style={{ background: 'linear-gradient(135deg, rgba(0,212,255,0.15), rgba(59,130,246,0.1))' }}>
+                    <th scope="col" className="text-left font-bold text-white p-4">Parameter</th>
+                    <th scope="col" className="text-left font-bold text-white p-4">Highest desirable level</th>
+                    <th scope="col" className="text-left font-bold text-white p-4">One Water</th>
+                    <th scope="col" className="text-right font-bold text-white p-4">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
                   {qualityResults.map((row, i) => (
-                    <TableRow
-                      key={i}
-                      style={{
-                        background: i % 2 === 0 ? 'rgba(255,255,255,0.02)' : 'rgba(255,255,255,0.015)',
-                        borderBottom: '1px solid rgba(0,212,255,0.06)',
-                      }}
-                    >
-                      <TableCell className="font-medium text-white">{row.parameter}</TableCell>
-                      <TableCell style={{ color: 'rgba(150,200,255,0.65)' }}>{row.allowedMax} {row.unit}</TableCell>
-                      <TableCell className="font-semibold" style={{ color: CYAN }}>{row.actual} {row.unit}</TableCell>
-                      <TableCell className="text-right">
-                        <span className="inline-flex items-center gap-1 text-sm font-medium text-emerald-400">
-                          <CheckCircle className="w-4 h-4" /> Pass
-                        </span>
-                      </TableCell>
-                    </TableRow>
+                    <tr key={row.parameter} style={{ background: i % 2 ? 'rgba(255,255,255,0.015)' : 'rgba(255,255,255,0.03)', borderTop: '1px solid rgba(0,212,255,0.06)' }}>
+                      <th scope="row" className="text-left font-medium text-white p-4">{row.parameter}</th>
+                      <td className="p-4 ow-muted">{row.allowedMax} {row.allowedMax.startsWith('No') ? '' : row.unit}</td>
+                      <td className="p-4 font-semibold ow-cyan">{row.actual} {row.unit}</td>
+                      <td className="p-4 text-right"><span className="inline-flex items-center gap-1 font-medium text-emerald-400"><CheckCircle2 className="w-4 h-4" /> Pass</span></td>
+                    </tr>
                   ))}
-                </TableBody>
-              </Table>
+                </tbody>
+              </table>
             </div>
-          </FadeIn>
-
-          <FadeIn className="text-center mt-10 flex flex-wrap gap-3 justify-center">
-            <a
-              href={labReport}
-              download="One-Water-PCRWR-Lab-Report.jpeg"
-              className="inline-flex items-center gap-2 px-7 py-3.5 rounded-xl font-bold text-white transition-all duration-300"
-              style={{ background: 'linear-gradient(135deg, #00d4ff, #0284c7)', boxShadow: '0 0 25px rgba(0,212,255,0.35)' }}
-              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.boxShadow = '0 0 40px rgba(0,212,255,0.6)'; (e.currentTarget as HTMLElement).style.transform = 'translateY(-2px)'; }}
-              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.boxShadow = '0 0 25px rgba(0,212,255,0.35)'; (e.currentTarget as HTMLElement).style.transform = 'translateY(0)'; }}
-            >
-              <Download className="w-5 h-5" /> Download Full Lab Report
-            </a>
-            <a
-              href="#certifications"
-              className="inline-flex items-center gap-2 px-7 py-3.5 rounded-xl font-semibold transition-all duration-300"
-              style={{ background: 'rgba(0,212,255,0.08)', border: '1px solid rgba(0,212,255,0.3)', color: CYAN }}
-              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(0,212,255,0.15)'; }}
-              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(0,212,255,0.08)'; }}
-            >
-              <Award className="w-5 h-5" /> View All Certificates
-            </a>
-          </FadeIn>
+          </Reveal>
+          <Reveal className="text-center mt-10 flex flex-wrap gap-3 justify-center">
+            <a href={reportUrl} target="_blank" rel="noopener noreferrer" className="ow-btn"><Download className="w-5 h-5" /> View the full lab report</a>
+            <a href="#certifications" className="ow-btn-ghost"><Award className="w-5 h-5" /> View all certificates</a>
+          </Reveal>
         </div>
       </section>
     </div>

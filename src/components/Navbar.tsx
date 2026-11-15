@@ -1,9 +1,9 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import { ShoppingCart, Menu, X, Droplets } from 'lucide-react';
+import { ShoppingCart, Menu, X, Phone } from 'lucide-react';
 import logoIcon from '@/assets/media/2.jpeg';
-import { Button } from '@/components/ui/button';
 import { useCart } from '@/contexts/CartContext';
+import { useSiteSettings, telLink } from '@/hooks/useSiteSettings';
 
 const navLinks = [
   { to: '/',         label: 'Home'        },
@@ -23,7 +23,10 @@ export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolled, setScrolled]     = useState(false);
   const { setIsOpen, itemCount } = useCart();
+  const { settings } = useSiteSettings();
   const location = useLocation();
+
+  useEffect(() => setMobileOpen(false), [location.pathname]);
 
   useEffect(() => {
     const handler = () => setScrolled(window.scrollY > 20);
@@ -43,10 +46,10 @@ export default function Navbar() {
     >
       <div className="container mx-auto px-4 flex items-center justify-between h-16">
         {/* Logo */}
-        <Link to="/" className="flex items-center gap-2 group">
+        <Link to="/" className="flex items-center gap-2 group" aria-label="One Water home">
           <div className="w-9 h-9 rounded-full overflow-hidden flex items-center justify-center"
             style={{ border: `1px solid ${CYAN}40`, boxShadow: `0 0 12px ${CYAN}30` }}>
-            <img src={logoIcon} alt="OneWater Logo" className="w-full h-full object-cover" />
+            <img src={logoIcon} alt="" width={36} height={36} className="w-full h-full object-cover" />
           </div>
           <span className="font-heading font-bold text-xl text-white">
             One<span style={{ color: CYAN }}>Water</span>
@@ -78,6 +81,10 @@ export default function Navbar() {
 
         {/* Right actions */}
         <div className="flex items-center gap-1">
+          <a href={telLink(settings.contact_info.phone)} className="hidden xl:flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-white/80 hover:text-white">
+            <Phone className="w-4 h-4 ow-cyan" /> {settings.contact_info.phone}
+          </a>
+          <Link to="/delivery" className="hidden sm:inline-flex ow-btn !py-2 !px-4 text-sm !rounded-lg mr-1">Order now</Link>
           {/* Cart */}
           <button
             className="relative p-2 rounded-lg transition-all duration-200"
@@ -103,6 +110,8 @@ export default function Navbar() {
             className="lg:hidden p-2 rounded-lg transition-colors"
             style={{ color: 'rgba(160,210,255,0.8)' }}
             onClick={() => setMobileOpen(!mobileOpen)}
+            aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
+            aria-expanded={mobileOpen}
           >
             {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
@@ -122,7 +131,6 @@ export default function Navbar() {
                 <Link
                   key={link.to}
                   to={link.to}
-                  onClick={() => setMobileOpen(false)}
                   className="px-3 py-2.5 rounded-md text-sm font-medium transition-all"
                   style={{
                     color: active ? CYAN : 'rgba(160,210,255,0.75)',
@@ -133,6 +141,9 @@ export default function Navbar() {
                 </Link>
               );
             })}
+            <a href={telLink(settings.contact_info.phone)} className="mt-2 px-3 py-2.5 rounded-md text-sm font-medium text-white flex items-center gap-2" style={{ background: 'rgba(0,212,255,0.08)' }}>
+              <Phone className="w-4 h-4 ow-cyan" /> Call {settings.contact_info.phone}
+            </a>
           </div>
         </div>
       )}

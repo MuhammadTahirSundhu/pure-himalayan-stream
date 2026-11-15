@@ -1,167 +1,114 @@
-import { Mountain, Leaf, Shield, Users, Clock, Zap, Award } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
-import aboutHero from '@/assets/brand/about-hero.jpg';
+import { Link } from 'react-router-dom';
+import { Factory, ShieldCheck, Eye, HeartHandshake, MapPin, Rocket, FlaskConical, Award } from 'lucide-react';
+import { useSiteSettings } from '@/hooks/useSiteSettings';
+import PageHero from '@/components/site/PageHero';
+import SectionHeading from '@/components/site/SectionHeading';
+import WaitlistForm from '@/components/site/WaitlistForm';
+import Reveal from '@/components/Reveal';
+import Seo from '@/components/site/Seo';
+import bottleFamily from '@/assets/media/7.jpeg';
+import bottleStudio from '@/assets/media/13.jpeg';
+import bottle19 from '@/assets/media/15.jpeg';
 
-const CYAN = '#00d4ff';
-
-const timeline = [
-  { year: '2020', title: 'Founded',          desc: 'One Water established in Gujranwala with a vision for pure, affordable hydration.' },
-  { year: '2021', title: 'PSQCA Certified',  desc: 'Achieved full PSQCA certification and began commercial production.' },
-  { year: '2022', title: 'Delivery Expanded',desc: 'Launched 19L home delivery across Gujranwala, Lahore, and Islamabad.' },
-  { year: '2023', title: 'Eco Initiative',   desc: 'Introduced recyclable bottles and carbon-neutral delivery vehicles.' },
-  { year: '2024', title: 'National Growth',  desc: 'Available in 50+ cities. Trusted by over 100,000 families.' },
-  { year: '2026', title: 'Digital First',    desc: 'Launched online ordering and subscription platform for nationwide delivery.' },
+const VALUES = [
+  { icon: ShieldCheck, title: 'Safety first', text: 'Produced under a Punjab Food Authority licence and an ISO 9001 quality system.' },
+  { icon: Eye, title: 'Radical honesty', text: 'We tell you exactly where our water comes from and publish our lab results.' },
+  { icon: FlaskConical, title: 'Proven, not promised', text: 'Independent PCRWR testing: “fit for drinking” on every parameter.' },
+  { icon: HeartHandshake, title: 'Local service', text: 'A Gujranwala team you can call or WhatsApp — and a rider who knows your street.' },
 ];
 
-function FadeIn({ children, delay = 0, className = '' }: { children: React.ReactNode; delay?: number; className?: string }) {
-  const ref = useRef<HTMLDivElement>(null);
-  const [vis, setVis] = useState(false);
-  useEffect(() => {
-    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) { setVis(true); obs.disconnect(); } }, { threshold: 0.1 });
-    if (ref.current) obs.observe(ref.current);
-    return () => obs.disconnect();
-  }, []);
-  return (
-    <div ref={ref} className={className} style={{ opacity: vis ? 1 : 0, transform: vis ? 'translateY(0)' : 'translateY(24px)', transition: `opacity 0.7s ease ${delay}ms, transform 0.7s ease ${delay}ms` }}>
-      {children}
-    </div>
-  );
-}
+const ROADMAP = [
+  { icon: Factory, title: 'Our plant in Gujranwala', text: 'Every bottle is purified, mineral-balanced and sealed at our own facility.', done: true },
+  { icon: MapPin, title: 'Delivering across Gujranwala', text: 'Homes, offices, shops and events across the whole city.', done: true },
+  { icon: Rocket, title: 'Next: more cities in Pakistan', text: 'We are preparing to expand. Tell us your city and help decide where we go next.', done: false },
+];
 
 export default function About() {
-  const values = [
-    { icon: Mountain, label: 'Himalayan Source', value: 'Glacial Springs',     color: 'from-cyan-500/20 to-cyan-700/5',  ic: 'text-cyan-400' },
-    { icon: Shield,   label: 'PSQCA Certified',  value: '100% Compliant',      color: 'from-blue-500/20 to-blue-700/5',  ic: 'text-blue-400' },
-    { icon: Leaf,     label: 'Eco-Friendly',     value: 'Recyclable Bottles',  color: 'from-emerald-500/20 to-emerald-700/5', ic: 'text-emerald-400' },
-    { icon: Users,    label: 'Families Served',  value: '100,000+',            color: 'from-violet-500/20 to-violet-700/5', ic: 'text-violet-400' },
-  ];
+  const { settings } = useSiteSettings();
+  const city = settings.service_areas.cities[0] ?? 'Gujranwala';
 
   return (
-    <div className="min-h-screen" style={{ background: '#030D1A' }}>
+    <div className="ow-page">
+      <Seo
+        title="About One Water | Gujranwala Mineral Water Plant"
+        description="One Water is a Gujranwala mineral water brand. Learn how we purify our water, our certifications, and our plan to bring One Water to more cities in Pakistan."
+        path="/about"
+        jsonLd={[{ '@type': 'AboutPage', name: 'About One Water', url: 'https://www.onewaterpakistan.com/about' }]}
+      />
+      <PageHero
+        eyebrow={<><Award className="w-4 h-4" /> Our story</>}
+        title={<>Made in {city}. <span className="ow-gradient-text">Built on trust.</span></>}
+        subtitle="One Water — “Quality is our Identity”. Clean, safe drinking water from our own plant, delivered by people who live in your city."
+      />
 
-      {/* Hero */}
-      <section className="relative h-[45vh] min-h-[320px] flex items-center justify-center overflow-hidden">
-        <img src={aboutHero} alt="Himalayan valley" className="absolute inset-0 w-full h-full object-cover" style={{ opacity: 0.2, mixBlendMode: 'luminosity' }} loading="lazy" />
-        <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg, rgba(3,13,26,0.5) 0%, rgba(3,13,26,0.85) 100%)' }} />
-        {/* Glow orb */}
-        <div className="absolute w-96 h-96 rounded-full pointer-events-none"
-          style={{ background: 'radial-gradient(circle, rgba(0,212,255,0.1) 0%, transparent 70%)' }} />
-        <div className="relative z-10 text-center px-4">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full mb-4"
-            style={{ background: 'rgba(0,212,255,0.08)', border: '1px solid rgba(0,212,255,0.25)' }}>
-            <Award className="w-4 h-4" style={{ color: CYAN }} />
-            <span className="text-sm font-medium" style={{ color: CYAN }}>Our Story</span>
-          </div>
-          <h1 className="font-heading font-black text-4xl md:text-6xl text-white mb-3"
-            style={{ textShadow: '0 0 60px rgba(0,212,255,0.2)' }}>
-            Born from the{' '}
-            <span style={{ background: 'linear-gradient(135deg, #00d4ff, #3b82f6)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
-              Himalayas
-            </span>
-          </h1>
-          <p className="text-lg" style={{ color: 'rgba(150,200,255,0.7)' }}>Made for Pakistan</p>
-        </div>
-        <div className="absolute bottom-0 left-0 right-0 h-16 pointer-events-none" style={{ background: 'linear-gradient(to bottom, transparent, #030D1A)' }} />
-      </section>
-
-      {/* Brand Story */}
-      <section className="py-20">
-        <div className="container mx-auto px-4 max-w-5xl">
-          <div className="grid md:grid-cols-2 gap-12 items-center">
-            <FadeIn>
-              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full mb-6"
-                style={{ background: 'rgba(0,212,255,0.08)', border: '1px solid rgba(0,212,255,0.2)' }}>
-                <Zap className="w-4 h-4" style={{ color: CYAN }} />
-                <span className="text-sm font-medium" style={{ color: CYAN }}>Why One Water?</span>
-              </div>
-              <h2 className="font-heading font-black text-3xl md:text-4xl text-white mb-5">
-                Pure Hydration,{' '}
-                <span style={{ background: 'linear-gradient(135deg, #00d4ff, #3b82f6)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
-                  Uncompromised
-                </span>
-              </h2>
-              <p className="leading-relaxed mb-4" style={{ color: 'rgba(150,200,255,0.75)' }}>
-                One Water was born from a simple belief: every Pakistani deserves access to safe,
-                pure, and affordable drinking water. Sourced from pristine Himalayan glaciers and
-                purified through a 10-step process, we bring nature's best to your doorstep.
-              </p>
-              <p className="leading-relaxed" style={{ color: 'rgba(150,200,255,0.65)' }}>
-                Based in Gujranwala, our state-of-the-art plant processes water that meets and exceeds
-                PSQCA standards. From our family to yours — pure, transparent, Pakistani.
-              </p>
-            </FadeIn>
-
-            <div className="grid grid-cols-2 gap-4">
-              {values.map((stat, i) => (
-                <FadeIn key={i} delay={i * 80}>
-                  <div
-                    className="relative p-5 rounded-2xl text-center transition-all duration-300 group"
-                    style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(0,212,255,0.12)', backdropFilter: 'blur(12px)' }}
-                    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = 'rgba(0,212,255,0.35)'; (e.currentTarget as HTMLElement).style.transform = 'translateY(-4px)'; }}
-                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = 'rgba(0,212,255,0.12)'; (e.currentTarget as HTMLElement).style.transform = 'translateY(0)'; }}
-                  >
-                    <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${stat.color} flex items-center justify-center mx-auto mb-3`}>
-                      <stat.icon className={`w-6 h-6 ${stat.ic}`} />
-                    </div>
-                    <p className="font-heading font-bold text-sm text-white">{stat.value}</p>
-                    <p className="text-xs mt-1" style={{ color: 'rgba(150,200,255,0.6)' }}>{stat.label}</p>
-                  </div>
-                </FadeIn>
-              ))}
+      <section className="py-16">
+        <div className="container mx-auto px-4 grid lg:grid-cols-2 gap-12 items-center max-w-6xl">
+          <Reveal direction="left" className="space-y-5">
+            <h2 className="font-heading font-black text-3xl md:text-4xl text-white">Why we started One Water</h2>
+            <p className="ow-muted leading-relaxed">
+              Families in {city} deserve drinking water they don't have to worry about. So we built our own purification plant at
+              Green Valley Phase 1 and set one rule: every bottle must be something we would give our own children.
+            </p>
+            <p className="ow-muted leading-relaxed">
+              Our water goes through a 10-stage process — filtration, activated carbon, reverse osmosis, mineral balancing, UV,
+              ozone and micron filtration — before it is sealed. We don't claim mountain springs or glaciers. We'd rather show
+              you the lab report.
+            </p>
+            <div className="flex flex-wrap gap-3 pt-2">
+              <Link to="/quality" className="ow-btn">See our lab results</Link>
+              <Link to="/contact" className="ow-btn-ghost">Visit or call us</Link>
             </div>
-          </div>
+          </Reveal>
+          <Reveal direction="right" className="grid grid-cols-2 gap-4">
+            <img src={bottleStudio} alt="One Water bottle" loading="lazy" className="rounded-2xl object-cover w-full h-64 md:h-80 ow-card" />
+            <div className="grid gap-4">
+              <img src={bottleFamily} alt="One Water bottles in two sizes" loading="lazy" className="rounded-2xl object-cover w-full h-[7.5rem] md:h-[9.5rem] ow-card" />
+              <img src={bottle19} alt="One Water 19 litre bottle" loading="lazy" className="rounded-2xl object-cover w-full h-[7.5rem] md:h-[9.5rem] ow-card" />
+            </div>
+          </Reveal>
         </div>
       </section>
 
-      {/* Timeline */}
-      <section className="py-20 relative" style={{ background: 'linear-gradient(180deg, #030D1A 0%, #041422 50%, #030D1A 100%)' }}>
-        <div className="absolute top-0 left-0 right-0 h-px" style={{ background: 'linear-gradient(90deg, transparent, rgba(0,212,255,0.3), transparent)' }} />
-        <div className="container mx-auto px-4 max-w-3xl">
-          <FadeIn className="text-center mb-14">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full mb-4"
-              style={{ background: 'rgba(0,212,255,0.08)', border: '1px solid rgba(0,212,255,0.2)' }}>
-              <Clock className="w-4 h-4" style={{ color: CYAN }} />
-              <span className="text-sm font-medium" style={{ color: CYAN }}>Our Journey</span>
-            </div>
-            <h2 className="font-heading font-black text-3xl md:text-4xl text-white">
-              Growing{' '}
-              <span style={{ background: 'linear-gradient(135deg, #00d4ff, #3b82f6)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
-                Stronger
-              </span>{' '}Every Year
-            </h2>
-          </FadeIn>
-
-          <div className="space-y-0">
-            {timeline.map((item, i) => (
-              <FadeIn key={i} delay={i * 80}>
-                <div className="flex gap-6 group">
-                  {/* Timeline node */}
-                  <div className="flex flex-col items-center shrink-0">
-                    <div
-                      className="w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 transition-all duration-300"
-                      style={{
-                        background: 'linear-gradient(135deg, rgba(0,212,255,0.2), rgba(59,130,246,0.15))',
-                        border: '1px solid rgba(0,212,255,0.35)',
-                        boxShadow: '0 0 16px rgba(0,212,255,0.15)',
-                      }}
-                    >
-                      <span className="text-xs font-black" style={{ color: CYAN }}>{item.year}</span>
-                    </div>
-                    {i < timeline.length - 1 && (
-                      <div className="w-px flex-1 mt-2" style={{ background: 'linear-gradient(to bottom, rgba(0,212,255,0.3), rgba(0,212,255,0.05))' }} />
-                    )}
-                  </div>
-                  {/* Content */}
-                  <div className="pb-8 pt-2">
-                    <h3 className="font-heading font-bold text-white mb-1.5 group-hover:text-cyan-300 transition-colors">{item.title}</h3>
-                    <p className="text-sm leading-relaxed" style={{ color: 'rgba(150,200,255,0.65)' }}>{item.desc}</p>
-                  </div>
-                </div>
-              </FadeIn>
+      <section className="py-16" style={{ background: 'linear-gradient(180deg, #030d1a 0%, #041422 50%, #030d1a 100%)' }}>
+        <div className="container mx-auto px-4">
+          <SectionHeading eyebrow="What we stand for" title={<>Our <span className="ow-gradient-text">promises</span></>} />
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5 max-w-6xl mx-auto">
+            {VALUES.map(({ icon: Icon, title, text }, i) => (
+              <Reveal key={title} delay={i * 90} className="ow-card ow-card-hover p-6">
+                <Icon className="w-8 h-8 ow-cyan mb-3" />
+                <h3 className="font-heading font-bold text-white mb-2">{title}</h3>
+                <p className="text-sm ow-muted leading-relaxed">{text}</p>
+              </Reveal>
             ))}
           </div>
         </div>
-        <div className="absolute bottom-0 left-0 right-0 h-px" style={{ background: 'linear-gradient(90deg, transparent, rgba(0,212,255,0.3), transparent)' }} />
+      </section>
+
+      <section className="py-20">
+        <div className="container mx-auto px-4 max-w-3xl">
+          <SectionHeading eyebrow="Where we're going" title={<>{city} today, <span className="ow-gradient-text">Pakistan next</span></>} />
+          <ol className="relative space-y-6 before:absolute before:left-6 before:top-2 before:bottom-2 before:w-px before:bg-gradient-to-b before:from-cyan-400/60 before:to-cyan-400/0">
+            {ROADMAP.map(({ icon: Icon, title, text, done }, i) => (
+              <li key={title}>
+                <Reveal delay={i * 120} className="relative flex gap-5">
+                  <span className="relative z-10 w-12 h-12 rounded-full flex items-center justify-center shrink-0"
+                    style={{ background: done ? 'linear-gradient(135deg,#00d4ff,#0284c7)' : 'rgba(255,255,255,0.05)', border: done ? 'none' : '1px dashed rgba(0,212,255,0.5)' }}>
+                    <Icon className={`w-5 h-5 ${done ? 'text-white' : 'ow-cyan'}`} />
+                  </span>
+                  <div className="ow-card p-5 flex-1">
+                    <p className="text-xs uppercase tracking-wider mb-1" style={{ color: done ? '#34d399' : '#fbbf24' }}>{done ? 'Today' : 'Coming soon'}</p>
+                    <h3 className="font-heading font-bold text-white">{title}</h3>
+                    <p className="text-sm ow-muted">{text}</p>
+                  </div>
+                </Reveal>
+              </li>
+            ))}
+          </ol>
+          <Reveal className="ow-card p-6 mt-10">
+            <p className="font-semibold text-white mb-3">Want One Water in your city? Join the waitlist.</p>
+            <WaitlistForm />
+          </Reveal>
+        </div>
       </section>
     </div>
   );

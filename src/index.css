@@ -1,5 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700;800&display=swap');
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -111,6 +109,7 @@
 
   body {
     @apply bg-background text-foreground font-sans;
+    overflow-x: clip; /* side-sliding reveals must never cause horizontal scroll */
   }
 
   h1, h2, h3, h4, h5, h6 {
@@ -240,3 +239,116 @@
   }
 }
 
+
+/* ── OneWater design system ───────────────────────────────────────────────
+   The site is dark-only. These classes replace the inline style objects that
+   were copy-pasted across pages. */
+@layer components {
+  .ow-page { @apply min-h-screen; background: #030d1a; }
+  .ow-muted { color: rgba(150, 200, 255, 0.72); }
+  .ow-subtle { color: rgba(150, 200, 255, 0.5); }
+  .ow-cyan { color: #00d4ff; }
+
+  .ow-gradient-text {
+    background: linear-gradient(135deg, #00d4ff 0%, #3b82f6 60%, #10b981 100%);
+    -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+  }
+
+  .ow-eyebrow {
+    @apply inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-medium;
+    color: #00d4ff; background: rgba(0, 212, 255, 0.08); border: 1px solid rgba(0, 212, 255, 0.22);
+  }
+
+  .ow-card {
+    @apply rounded-2xl;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(0, 212, 255, 0.14);
+    backdrop-filter: blur(12px);
+  }
+  .ow-card-hover {
+    transition: transform .35s cubic-bezier(.2,.8,.2,1), border-color .35s, box-shadow .35s, background .35s;
+  }
+  .ow-card-hover:hover {
+    transform: translateY(-4px);
+    border-color: rgba(0, 212, 255, 0.38);
+    background: rgba(0, 212, 255, 0.05);
+    box-shadow: 0 14px 36px -10px rgba(0, 212, 255, 0.28);
+  }
+
+  .ow-btn {
+    @apply relative inline-flex items-center justify-center gap-2 rounded-xl px-6 py-3.5 font-bold text-white overflow-hidden select-none;
+    background: linear-gradient(135deg, #00d4ff, #0284c7);
+    box-shadow: 0 0 22px rgba(0, 212, 255, 0.3);
+    transition: transform .25s ease, box-shadow .25s ease, opacity .2s;
+  }
+  .ow-btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 0 36px rgba(0, 212, 255, 0.55); }
+  .ow-btn:active:not(:disabled) { transform: translateY(0) scale(.98); }
+  .ow-btn:disabled { @apply cursor-not-allowed; opacity: .45; box-shadow: none; }
+  /* light sweep on hover */
+  .ow-btn::after {
+    content: ''; position: absolute; inset: 0; transform: translateX(-120%);
+    background: linear-gradient(110deg, transparent 30%, rgba(255,255,255,.28) 50%, transparent 70%);
+    transition: transform .7s ease;
+  }
+  .ow-btn:hover:not(:disabled)::after { transform: translateX(120%); }
+
+  .ow-btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-6 py-3.5 font-semibold text-white;
+    background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: background .2s, border-color .2s;
+  }
+  .ow-btn-ghost:hover { background: rgba(0, 212, 255, 0.08); border-color: rgba(0, 212, 255, 0.35); }
+
+  .ow-btn-whatsapp {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-6 py-3.5 font-bold text-white;
+    background: #25d366; box-shadow: 0 0 22px rgba(37, 211, 102, 0.3);
+    transition: transform .25s ease, box-shadow .25s ease;
+  }
+  .ow-btn-whatsapp:hover { transform: translateY(-2px); box-shadow: 0 0 34px rgba(37, 211, 102, 0.55); }
+
+  .ow-input {
+    @apply w-full rounded-xl px-4 py-3 text-sm text-white outline-none;
+    background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(0, 212, 255, 0.2);
+    transition: border-color .2s, box-shadow .2s;
+  }
+  .ow-input::placeholder { color: rgba(150, 200, 255, 0.45); }
+  .ow-input:focus { border-color: rgba(0, 212, 255, 0.55); box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.12); }
+  .ow-input[aria-invalid='true'] { border-color: rgba(248, 113, 113, 0.7); }
+  select.ow-input option { background: #030d1a; }
+  .ow-label { @apply block text-sm font-medium text-white mb-1.5; }
+  .ow-error { @apply text-xs mt-1; color: #f87171; }
+}
+
+@layer utilities {
+  @keyframes wave-drift { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+  .animate-wave-drift { animation: wave-drift 18s linear infinite; }
+  .animate-wave-drift-slow { animation: wave-drift 30s linear infinite reverse; }
+
+  @keyframes bubble-rise {
+    0%   { transform: translate(0, 0) scale(.6); opacity: 0; }
+    15%  { opacity: .7; }
+    100% { transform: translate(var(--drift, 12px), -110vh) scale(1); opacity: 0; }
+  }
+  .animate-bubble { animation: bubble-rise var(--dur, 12s) ease-in infinite; animation-delay: var(--delay, 0s); }
+
+  @keyframes bottle-bob { 0%, 100% { transform: translateY(0) rotate(-1deg); } 50% { transform: translateY(-12px) rotate(1deg); } }
+  .animate-bottle-bob { animation: bottle-bob 6s ease-in-out infinite; }
+
+  @keyframes drop-travel { from { offset-distance: 0%; } to { offset-distance: 100%; } }
+
+  @keyframes soft-pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(37, 211, 102, .55); } 70% { box-shadow: 0 0 0 16px rgba(37, 211, 102, 0); } }
+  .animate-soft-pulse { animation: soft-pulse 2.4s ease-out infinite; }
+
+  @keyframes fade-up { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
+  .animate-fade-up { animation: fade-up .7s cubic-bezier(.2,.8,.2,1) both; }
+}
+
+/* Respect visitors who ask for less motion. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
