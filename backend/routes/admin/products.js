@@ -28,7 +28,7 @@ router.post('/', upload.single('image'), asyncHandler(async (req, res) => {
   if (!/^[a-z0-9-]{1,40}$/i.test(id.trim())) throw new HttpError(400, 'ValidationError', 'ID may only contain letters, numbers and dashes.');
   const p = Number(price);
   if (!Number.isFinite(p) || p < 0) throw new HttpError(400, 'ValidationError', 'Price must be 0 or more.');
-  if (!['bottle', 'dispenser'].includes(category)) throw new HttpError(400, 'ValidationError', 'Category must be bottle or dispenser.');
+  if (!['bottle', 'dispenser', 'accessory'].includes(category)) throw new HttpError(400, 'ValidationError', 'Category must be bottle, dispenser (returnable 19L) or accessory.');
 
   const image_url = req.file ? await uploadImage(req.file) : null;
   try {

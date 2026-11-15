@@ -15,3 +15,4 @@ export const loginLimiter   = make(15, 10, 'Too many login attempts. Please try 
 export const orderLimiter   = make(15, 10, 'Too many orders from this connection. Please call or WhatsApp us.');
 export const uploadLimiter  = make(15, 10, 'Too many uploads. Please try again in a few minutes.');
 export const formLimiter    = make(15, 10, 'Too many submissions. Please try again later or WhatsApp us.');
+export const trackLimiter   = make(15, 30, 'Too many lookups. Please try again in a few minutes.');

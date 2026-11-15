@@ -18,6 +18,7 @@ import clientsRouter from './routes/clients.js';
 import offersRouter from './routes/offers.js';
 import settingsRouter from './routes/settings.js';
 import waitlistRouter from './routes/waitlist.js';
+import contentRouter from './routes/content.js';
 
 // Admin routes
 import adminAuthRouter from './routes/admin/auth.js';
@@ -30,6 +31,8 @@ import adminSettingsRouter from './routes/admin/settings.js';
 import adminClientsRouter from './routes/admin/clients.js';
 import adminOffersRouter from './routes/admin/offers.js';
 import adminInquiriesRouter from './routes/admin/inquiries.js';
+import adminCustomersRouter from './routes/admin/customers.js';
+import adminContentRouter from './routes/admin/content.js';
 
 if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) {
   console.error('❌ JWT_SECRET must be set and at least 32 characters.');
@@ -70,6 +73,7 @@ app.use('/api/clients', clientsRouter);
 app.use('/api/offers', offersRouter);
 app.use('/api/settings', settingsRouter);
 app.use('/api/waitlist', waitlistRouter);
+app.use('/api', contentRouter); // GET /api/testimonials, /api/gallery
 
 app.use('/api/admin', adminAuthRouter); // POST /api/admin/login (public)
 app.use('/api/admin/orders', authMiddleware, adminOrdersRouter);
@@ -81,6 +85,8 @@ app.use('/api/admin/settings', authMiddleware, adminSettingsRouter);
 app.use('/api/admin/clients', authMiddleware, adminClientsRouter);
 app.use('/api/admin/offers', authMiddleware, adminOffersRouter);
 app.use('/api/admin/inquiries', authMiddleware, adminInquiriesRouter);
+app.use('/api/admin/customers', authMiddleware, adminCustomersRouter);
+app.use('/api/admin/content', authMiddleware, adminContentRouter);
 
 app.use('/api', (req, res) => {
   res.status(404).json({ error: 'NotFound', message: 'This API route does not exist.' });

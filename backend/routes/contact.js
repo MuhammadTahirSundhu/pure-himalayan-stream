@@ -6,6 +6,7 @@ import { validate } from '../middleware/validate.js';
 import { formLimiter } from '../middleware/rateLimiter.js';
 import { asyncHandler, HttpError } from '../lib/asyncHandler.js';
 import { normalizePkPhone } from '../lib/pricing.js';
+import { notifyOwner } from '../lib/notify.js';
 import pool from '../db.js';
 
 const router = Router();
@@ -28,6 +29,7 @@ router.post(
       'INSERT INTO public.contact_messages (name, phone, email, message) VALUES ($1, $2, $3, $4) RETURNING id',
       [name, phone, email || null, message]
     );
+    notifyOwner(`✉️ New message from ${name}${phone ? ` · ${phone}` : ''}${email ? ` · ${email}` : ''}\n${message.slice(0, 500)}`);
     res.status(201).json({ success: true, id: rows[0].id });
   })
 );

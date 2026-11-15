@@ -25,6 +25,11 @@ export const DEFAULT_SETTINGS = {
   },
   service_areas: { cities: ['Gujranwala'], note: 'We deliver across all of Gujranwala city.' },
   lab_report_url: '',
+  // Structured hours drive the "we're closed" notice. Days: 0=Sun … 5=Fri, 6=Sat (Pakistan time).
+  business_hours: { open: '09:00', close: '19:00', closed_days: [5] },
+  // Referral rewards are OFF until the owner sets amounts and enables them.
+  referral: { enabled: false, new_customer_discount: 0, referrer_credit: 0 },
+  google_review_url: '',
 };
 
 export const SETTING_KEYS = Object.keys(DEFAULT_SETTINGS);
@@ -96,6 +101,25 @@ export function sanitizeSettingsUpdate(input) {
       }
       case 'lab_report_url':
         out[key] = str(value, 500);
+        break;
+      case 'google_review_url': {
+        const url = str(value, 500);
+        if (url && !/^https:\/\//.test(url)) throw new Error('Google review link must start with https://');
+        out[key] = url;
+        break;
+      }
+      case 'business_hours': {
+        const time = (t, d) => (/^([01]\d|2[0-3]):[0-5]\d$/.test(t) ? t : d);
+        const days = (Array.isArray(value.closed_days) ? value.closed_days : []).map(Number).filter((d) => Number.isInteger(d) && d >= 0 && d <= 6);
+        out[key] = { open: time(value.open, '09:00'), close: time(value.close, '19:00'), closed_days: [...new Set(days)] };
+        break;
+      }
+      case 'referral':
+        out[key] = {
+          enabled: Boolean(value.enabled),
+          new_customer_discount: num(value.new_customer_discount, 0, 10000),
+          referrer_credit: num(value.referrer_credit, 0, 10000),
+        };
         break;
       default:
         throw new Error(`Unknown setting: ${key}`);

@@ -62,3 +62,18 @@ test('Pakistani phone normalisation', () => {
   assert.equal(normalizePkPhone('923001234567'), '03001234567');
   assert.equal(normalizePkPhone('12345'), null);
 });
+
+test('referral discount and credit reduce water only and never go negative', () => {
+  const r = priceOrder({ items: [{ id: '19l', quantity: 1 }], products, delivery, referralDiscount: 100, credit: 500 });
+  assert.equal(r.referral_discount, 100);
+  assert.equal(r.credit_applied, 150);      // capped at remaining water value (250 - 100)
+  assert.equal(r.total, 0 + 1000);          // only the refundable deposit remains
+});
+
+test('promo and referral discount both cap at the water subtotal', () => {
+  const promo = { code: 'X', discount_percentage: 50, min_order_amount: 0 };
+  const r = priceOrder({ items: [{ id: '500ml', quantity: 2 }], products, delivery, promo, referralDiscount: 500 });
+  assert.equal(r.discount, 50);
+  assert.equal(r.referral_discount, 50);
+  assert.equal(r.total, 0);
+});

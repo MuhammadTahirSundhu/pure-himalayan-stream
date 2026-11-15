@@ -2,7 +2,9 @@
 import { Router } from 'express';
 import { body } from 'express-validator';
 import { validate, uuidParam } from '../../middleware/validate.js';
-import { asyncHandler, HttpError } from '../../lib/asyncHandler.js';
+import { asyncHandler, withTransaction, HttpError } from '../../lib/asyncHandler.js';
+import { applyDelivered, applyRejected } from '../../lib/customers.js';
+import { getSettings } from '../../lib/settings.js';
 import { canTransition } from '../../lib/pricing.js';
 import pool from '../../db.js';
 
@@ -38,20 +40,26 @@ router.put(
   validate,
   asyncHandler(async (req, res) => {
     const { status } = req.body;
-    const { rows } = await pool.query('SELECT status FROM public.orders WHERE id = $1', [req.params.id]);
-    if (!rows.length) throw new HttpError(404, 'NotFound', 'Order not found.');
-    if (!canTransition(rows[0].status, status)) {
-      throw new HttpError(409, 'InvalidTransition', `An order that is ${rows[0].status} cannot be marked ${status}.`);
-    }
     // notes: undefined = keep, '' = clear, string = replace
     const notes = req.body.notes === undefined ? undefined : (req.body.notes || null);
-    await pool.query(
-      `UPDATE public.orders
-         SET status = $1, status_updated_at = CASE WHEN status <> $1 THEN now() ELSE status_updated_at END,
-             notes = CASE WHEN $3 THEN $2 ELSE notes END
-       WHERE id = $4`,
-      [status, notes ?? null, notes !== undefined, req.params.id]
-    );
+    const settings = await getSettings();
+    await withTransaction(pool, async (client) => {
+      const { rows } = await client.query('SELECT * FROM public.orders WHERE id = $1 FOR UPDATE', [req.params.id]);
+      if (!rows.length) throw new HttpError(404, 'NotFound', 'Order not found.');
+      const order = rows[0];
+      if (!canTransition(order.status, status)) {
+        throw new HttpError(409, 'InvalidTransition', `An order that is ${order.status} cannot be marked ${status}.`);
+      }
+      await client.query(
+        `UPDATE public.orders
+           SET status = $1, status_updated_at = CASE WHEN status <> $1 THEN now() ELSE status_updated_at END,
+               notes = CASE WHEN $3 THEN $2 ELSE notes END
+         WHERE id = $4`,
+        [status, notes ?? null, notes !== undefined, order.id]
+      );
+      if (order.status !== status && status === 'delivered') await applyDelivered(client, order, settings.referral);
+      if (order.status !== status && status === 'rejected') await applyRejected(client, order);
+    });
     res.json({ success: true, id: req.params.id, status });
   })
 );

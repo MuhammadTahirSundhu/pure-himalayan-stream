@@ -5,6 +5,7 @@ import { validate } from '../middleware/validate.js';
 import { formLimiter } from '../middleware/rateLimiter.js';
 import { asyncHandler } from '../lib/asyncHandler.js';
 import { normalizePkPhone } from '../lib/pricing.js';
+import { notifyOwner } from '../lib/notify.js';
 import pool from '../db.js';
 
 const router = Router();
@@ -29,6 +30,7 @@ router.post(
       [b.name, normalizePkPhone(b.phone), b.email || null, b.event_type || null, b.event_date || null,
         b.event_location || null, b.bottle_size || null, b.quantity || null, b.notes || null]
     );
+    notifyOwner(`🎉 Bulk/event inquiry from ${b.name} · ${normalizePkPhone(b.phone)}\n${[b.event_type, b.event_date, b.event_location, b.quantity && `${b.quantity} × ${b.bottle_size || 'bottles'}`].filter(Boolean).join(' · ')}${b.notes ? `\n📝 ${b.notes}` : ''}`);
     res.status(201).json({ success: true, id: rows[0].id });
   })
 );

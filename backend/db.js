@@ -346,6 +346,101 @@ async function runMigrations(client) {
     WHERE description = 'Perfect for on-the-go hydration. Pure Himalayan mineral water in a compact bottle.'`);
   await client.query(`UPDATE public.products SET description = 'Maximum hydration for the whole family. 10-stage purified and lab-tested.'
     WHERE description = 'Maximum hydration for the whole family. Premium Himalayan purity.'`);
+
+  // ── v2: customers, bottles, referrals, reviews, gallery, slots ─────────
+  await addColumn(client, 'orders', 'preferred_slot', 'text');
+  await addColumn(client, 'orders', 'referral_code_used', 'text');
+  await addColumn(client, 'orders', 'referral_discount', 'numeric NOT NULL DEFAULT 0');
+  await addColumn(client, 'orders', 'credit_applied', 'numeric NOT NULL DEFAULT 0');
+
+  // One row per phone number — built from orders (no customer login needed).
+  await client.query(`
+    CREATE TABLE IF NOT EXISTS public.customers (
+      phone text PRIMARY KEY,
+      name text NOT NULL,
+      city text,
+      area text,
+      street text,
+      bottles_held integer NOT NULL DEFAULT 0,
+      deposit_held numeric NOT NULL DEFAULT 0,
+      referral_code text UNIQUE,
+      referral_credit numeric NOT NULL DEFAULT 0,
+      referred_by text,
+      orders_count integer NOT NULL DEFAULT 0,
+      delivery_schedule text,
+      last_order_at timestamptz,
+      last_delivered_at timestamptz,
+      last_reminded_at timestamptz,
+      notes text,
+      created_at timestamptz DEFAULT now()
+    );
+  `);
+  await client.query(`
+    CREATE TABLE IF NOT EXISTS public.bottle_events (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      phone text NOT NULL,
+      order_id uuid,
+      bottles_change integer NOT NULL,
+      deposit_change numeric NOT NULL DEFAULT 0,
+      note text,
+      created_at timestamptz DEFAULT now()
+    );
+  `);
+  await client.query(`
+    CREATE TABLE IF NOT EXISTS public.testimonials (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      name text NOT NULL,
+      area text,
+      text text NOT NULL,
+      rating integer CHECK (rating BETWEEN 1 AND 5),
+      source text,
+      is_active boolean NOT NULL DEFAULT true,
+      sort_order integer NOT NULL DEFAULT 0,
+      created_at timestamptz DEFAULT now()
+    );
+  `);
+  await client.query(`
+    CREATE TABLE IF NOT EXISTS public.gallery (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      image_url text NOT NULL,
+      caption text,
+      is_active boolean NOT NULL DEFAULT true,
+      sort_order integer NOT NULL DEFAULT 0,
+      created_at timestamptz DEFAULT now()
+    );
+  `);
+
+  // Products may now also be accessories (dispensers, pumps) — no deposit.
+  const { rows: checks } = await client.query(`
+    SELECT con.conname, pg_get_constraintdef(con.oid) AS def FROM pg_constraint con
+    JOIN pg_class rel ON rel.oid = con.conrelid
+    WHERE rel.relname = 'products' AND con.contype = 'c'`);
+  for (const c of checks) {
+    if (c.def.includes('category') && !c.def.includes('accessory')) {
+      await client.query(`ALTER TABLE public.products DROP CONSTRAINT "${c.conname}"`);
+      await client.query(`ALTER TABLE public.products ADD CONSTRAINT products_category_check CHECK (category IN ('bottle', 'dispenser', 'accessory'))`);
+    }
+  }
+
+  // Backfill customers from existing orders once (first deploy of v2).
+  const { rows: [{ c: customerCount }] } = await client.query('SELECT COUNT(*)::int AS c FROM public.customers');
+  if (customerCount === 0) {
+    await client.query(`
+      INSERT INTO public.customers (phone, name, city, area, street, orders_count, last_order_at, delivery_schedule)
+      SELECT DISTINCT ON (phone) phone, customer_name, city, area, street,
+             COUNT(*) OVER (PARTITION BY phone), MAX(created_at) OVER (PARTITION BY phone), delivery_schedule
+      FROM public.orders WHERE status <> 'rejected'
+      ORDER BY phone, created_at DESC
+      ON CONFLICT (phone) DO NOTHING`);
+    await client.query(`
+      UPDATE public.customers c SET
+        bottles_held = COALESCE(x.bottles, 0), deposit_held = COALESCE(x.deposit, 0), last_delivered_at = x.last_delivered
+      FROM (SELECT o.phone, SUM(oi.new_bottles) AS bottles, SUM(oi.deposit_at_time) AS deposit, MAX(o.status_updated_at) AS last_delivered
+            FROM public.orders o JOIN public.order_items oi ON oi.order_id = o.id
+            WHERE o.status = 'delivered' GROUP BY o.phone) x
+      WHERE x.phone = c.phone`);
+  }
+
 }
 
 export default pool;

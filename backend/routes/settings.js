@@ -14,6 +14,9 @@ router.get('/', asyncHandler(async (req, res) => {
     delivery_info: s.delivery_info,
     service_areas: s.service_areas,
     lab_report_url: s.lab_report_url || null,
+    business_hours: s.business_hours,
+    referral: s.referral,
+    google_review_url: s.google_review_url || null,
   });
 }));
 
