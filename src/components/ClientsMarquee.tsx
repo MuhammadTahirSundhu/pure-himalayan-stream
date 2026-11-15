@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { Building2 } from 'lucide-react';
+import { useLang } from '@/contexts/LanguageContext';
 
 interface Client {
   id: string;
@@ -113,6 +114,7 @@ export default function ClientsMarquee() {
   const animRef = useRef<number | null>(null);
   const posRef = useRef(0);
   const isPausedRef = useRef(false);
+  const { t } = useLang();
 
 
   // Smooth JS-driven marquee — scrolls LEFT → RIGHT, pauses on hover
@@ -160,19 +162,19 @@ export default function ClientsMarquee() {
         <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full mb-4"
           style={{ background: 'rgba(0,212,255,0.08)', border: '1px solid rgba(0,212,255,0.25)' }}>
           <Building2 className="w-4 h-4" style={{ color: '#00d4ff' }} />
-          <span className="text-sm font-medium" style={{ color: '#00d4ff' }}>Trusted Partners</span>
+          <span className="text-sm font-medium" style={{ color: '#00d4ff' }}>{t('Trusted Partners', 'قابلِ اعتماد پارٹنرز')}</span>
         </div>
         <h2 className="font-heading font-bold text-3xl md:text-4xl text-white mb-3">
-          Our Featured{' '}
+          {t('Our Featured', 'ہمارے نمایاں')}{' '}
           <span style={{
             background: 'linear-gradient(135deg, #00d4ff, #3b82f6)',
             WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text',
           }}>
-            Clients
+            {t('Clients', 'کلائنٹس')}
           </span>
         </h2>
         <p className="max-w-lg mx-auto" style={{ color: 'rgba(150,200,255,0.7)' }}>
-          Businesses, restaurants, offices and institutions in Gujranwala that serve One Water.
+          {t('Businesses, restaurants, offices and institutions in Gujranwala that serve One Water.', 'گوجرانوالہ کے کاروبار، ریسٹورنٹس، دفاتر اور ادارے جو ون واٹر استعمال کرتے ہیں۔')}
         </p>
       </div>
 
@@ -186,6 +188,7 @@ export default function ClientsMarquee() {
       {/* Scrolling track */}
       <div
         className="overflow-hidden"
+        dir="ltr"
         onMouseEnter={() => { isPausedRef.current = true; }}
         onMouseLeave={() => { isPausedRef.current = false; }}
       >

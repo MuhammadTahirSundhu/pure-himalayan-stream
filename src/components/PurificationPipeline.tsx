@@ -11,6 +11,7 @@ import step10 from '@/assets/purification/step-10-bottling.webp';
 import { purificationSteps } from '@/data/products';
 import { useScrollReveal } from '@/hooks/useScrollReveal';
 import { cn } from '@/lib/utils';
+import { useLang } from '@/contexts/LanguageContext';
 
 const stepImages = [step1, step2, step3, step4, step5, step6, step7, step8, step9, step10];
 
@@ -26,6 +27,7 @@ function PipelineNode({
   image: string;
 }) {
   const { ref, visible } = useScrollReveal<HTMLDivElement>({ threshold: 0.25 });
+  const { t } = useLang();
   const isEven = index % 2 === 0;
 
   return (
@@ -51,7 +53,7 @@ function PipelineNode({
               className="max-h-full max-w-full object-contain animate-float-slow"
             />
             {/* Step badge */}
-            <div className="absolute -top-3 -left-3 w-12 h-12 rounded-2xl water-gradient flex items-center justify-center shadow-lg shadow-primary/30">
+            <div className="absolute -top-3 -start-3 w-12 h-12 rounded-2xl water-gradient flex items-center justify-center shadow-lg shadow-primary/30">
               <span className="font-heading font-bold text-primary-foreground">{index + 1}</span>
             </div>
             {/* Pulse ring */}
@@ -61,9 +63,9 @@ function PipelineNode({
       </div>
 
       {/* Content side */}
-      <div className={cn(isEven ? 'md:order-2 md:text-left' : 'md:order-1 md:text-right')}>
+      <div className={cn(isEven ? 'md:order-2 md:text-start' : 'md:order-1 md:text-end')}>
         <div className="inline-block px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold mb-3">
-          STEP {String(index + 1).padStart(2, '0')}
+          {t('STEP', 'مرحلہ')} {String(index + 1).padStart(2, '0')}
         </div>
         <h3 className="font-heading font-bold text-2xl md:text-3xl text-foreground mb-3">
           {title}
@@ -75,6 +77,7 @@ function PipelineNode({
 }
 
 export default function PurificationPipeline() {
+  const { isUrdu } = useLang();
   return (
     <div className="relative max-w-5xl mx-auto">
       {/* Vertical pipeline line */}
@@ -101,8 +104,8 @@ export default function PurificationPipeline() {
           <PipelineNode
             key={step.step}
             index={i}
-            title={step.title}
-            description={step.description}
+            title={isUrdu ? step.titleUr : step.title}
+            description={isUrdu ? step.descriptionUr : step.description}
             image={stepImages[i]}
           />
         ))}

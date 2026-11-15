@@ -1,6 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import type { SiteSettings } from '@/lib/types';
+import { useLang } from '@/contexts/LanguageContext';
+import { hoursTextUr } from '@/lib/hours';
 
 /** Shown instantly (and if the API is cold/unreachable) — real values load over it. */
 export const FALLBACK_SETTINGS: SiteSettings = {
@@ -26,7 +28,11 @@ export function useSiteSettings() {
     queryFn: () => api<SiteSettings>('/api/settings'),
     staleTime: 5 * 60 * 1000,
   });
-  return { ...q, settings: q.data ?? FALLBACK_SETTINGS };
+  const { isUrdu } = useLang();
+  const base = q.data ?? FALLBACK_SETTINGS;
+  // The hours text is free text typed in English by the owner; in Urdu derive it from the structured hours.
+  const settings = isUrdu ? { ...base, contact_info: { ...base.contact_info, hours: hoursTextUr(base.business_hours) } } : base;
+  return { ...q, settings };
 }
 
 /** wa.me link with an optional pre-filled message. */

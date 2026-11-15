@@ -3,12 +3,14 @@ import { useEffect, useState } from 'react';
 import { loadLastOrder, type LastOrder } from '@/lib/lastOrder';
 import { useProducts } from '@/hooks/useProducts';
 import { useCart } from '@/contexts/CartContext';
+import { useLang } from '@/contexts/LanguageContext';
 
 /** "Order again" for returning visitors on this device. Repeat 19L orders assume empties are swapped. */
 export default function OrderAgain({ className = '' }: { className?: string }) {
   const [last, setLast] = useState<LastOrder | null>(null);
   const { data: products = [] } = useProducts();
   const { setItem, setIsOpen, setSchedule } = useCart();
+  const { t } = useLang();
   useEffect(() => setLast(loadLastOrder()), []);
 
   const lines = (last?.items ?? []).map((it) => ({ it, p: products.find((x) => x.id === it.id && x.inStock) })).filter((l) => l.p);
@@ -26,7 +28,7 @@ export default function OrderAgain({ className = '' }: { className?: string }) {
     <button onClick={reorder} className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm text-white transition-colors hover:bg-white/10 ${className}`}
       style={{ background: 'rgba(16,185,129,0.12)', border: '1px solid rgba(16,185,129,0.35)' }}>
       <RotateCcw className="w-4 h-4 text-emerald-300" />
-      Order again: {lines.map(({ it, p }) => `${it.quantity} × ${p!.size}`).join(', ')}
+      {t('Order again:', 'دوبارہ آرڈر کریں:')} <bdi dir="ltr">{lines.map(({ it, p }) => `${it.quantity} × ${p!.size}`).join(', ')}</bdi>
     </button>
   );
 }

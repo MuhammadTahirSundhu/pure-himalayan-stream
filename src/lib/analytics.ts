@@ -27,7 +27,7 @@ export function initAnalytics() {
     loadScript(`https://www.googletagmanager.com/gtag/js?id=${GA_ID}`);
   }
   if (PIXEL_ID) {
-    const fbq = function (...args: unknown[]) { fbq.callMethod ? fbq.callMethod(...args) : fbq.queue!.push(args); } as NonNullable<Window['fbq']>;
+    const fbq = function (...args: unknown[]) { if (fbq.callMethod) fbq.callMethod(...args); else fbq.queue!.push(args); } as NonNullable<Window["fbq"]>;
     fbq.queue = []; fbq.loaded = true; fbq.version = '2.0'; fbq.push = fbq;
     window.fbq = fbq;
     loadScript('https://connect.facebook.net/en_US/fbevents.js');

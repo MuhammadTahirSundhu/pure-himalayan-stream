@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Award, ZoomIn } from 'lucide-react';
 import Reveal from '@/components/Reveal';
+import { useLang } from '@/contexts/LanguageContext';
 import cert1 from '@/assets/certificates/1.webp';
 import cert2 from '@/assets/certificates/2.webp';
 import cert3 from '@/assets/certificates/3.webp';
@@ -9,17 +10,19 @@ import cert4 from '@/assets/certificates/4.webp';
 import cert5 from '@/assets/certificates/5.webp';
 import cert6 from '@/assets/certificates/6.webp';
 
-const certificates = [
-  { src: cert1, title: 'Punjab Food Authority License', issuer: 'PFA — Govt. of Punjab' },
-  { src: cert2, title: 'ISO 9001:2015 Quality Management', issuer: 'MR Group Certification' },
-  { src: cert3, title: 'SABIC Food-Grade Material Certificate', issuer: 'Saudi Basic Industries' },
-  { src: cert4, title: 'SES Traders FDA-Compliant Bottles', issuer: 'US FDA 21 CFR Compliant' },
-  { src: cert5, title: 'HMCA Halal Certification', issuer: 'Halal Montreal Authority' },
-  { src: cert6, title: 'PCRWR Water Quality Lab Report', issuer: 'Govt. of Pakistan — Ministry of Water Resources' },
+const getCertificates = (t: (en: string, ur: string) => string) => [
+  { src: cert1, title: t('Punjab Food Authority License', 'پنجاب فوڈ اتھارٹی لائسنس'), issuer: t('PFA — Govt. of Punjab', 'PFA — حکومتِ پنجاب') },
+  { src: cert2, title: t('ISO 9001:2015 Quality Management', 'ISO 9001:2015 کوالٹی مینجمنٹ'), issuer: 'MR Group Certification' },
+  { src: cert3, title: t('SABIC Food-Grade Material Certificate', 'SABIC فوڈ گریڈ میٹیریل سرٹیفکیٹ'), issuer: 'Saudi Basic Industries' },
+  { src: cert4, title: t('SES Traders FDA-Compliant Bottles', 'SES Traders کی FDA کے مطابق بوتلیں'), issuer: 'US FDA 21 CFR Compliant' },
+  { src: cert5, title: t('HMCA Halal Certification', 'HMCA حلال سرٹیفکیشن'), issuer: 'Halal Montreal Authority' },
+  { src: cert6, title: t('PCRWR Water Quality Lab Report', 'PCRWR واٹر کوالٹی لیب رپورٹ'), issuer: t('Govt. of Pakistan — Ministry of Water Resources', 'حکومتِ پاکستان — وزارتِ آبی وسائل') },
 ];
 
 export default function Certifications() {
   const [open, setOpen] = useState<number | null>(null);
+  const { t } = useLang();
+  const certificates = getCertificates(t);
 
   return (
     <section id="certifications" className="py-16 bg-gradient-to-b from-background via-water-ice/20 to-background scroll-mt-20">
@@ -27,14 +30,16 @@ export default function Certifications() {
         <Reveal className="text-center mb-12">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-accent/10 border border-accent/20 mb-4">
             <Award className="w-4 h-4 text-accent" />
-            <span className="text-sm font-semibold text-accent">Legalization & Compliance</span>
+            <span className="text-sm font-semibold text-accent">{t('Legalization & Compliance', 'لائسنس اور سرٹیفکیشن')}</span>
           </div>
           <h2 className="font-heading font-bold text-3xl md:text-4xl text-foreground mb-3">
-            Certified by <span className="text-primary">Authorities</span>
+            {t('Certified by', 'متعلقہ')} <span className="text-primary">{t('Authorities', 'اداروں سے سرٹیفائیڈ')}</span>
           </h2>
           <p className="text-muted-foreground max-w-2xl mx-auto">
-            Every certification represents our unwavering commitment to purity, safety, and trust.
-            Tap any certificate to view the full document.
+            {t(
+              'Every certification represents our unwavering commitment to purity, safety, and trust. Tap any certificate to view the full document.',
+              'ہر سرٹیفکیٹ صفائی، حفاظت اور اعتماد کے ساتھ ہماری پکی وابستگی کا ثبوت ہے۔ پورا ڈاکومنٹ دیکھنے کے لیے کسی بھی سرٹیفکیٹ پر ٹیپ کریں۔',
+            )}
           </p>
         </Reveal>
 
@@ -52,10 +57,10 @@ export default function Certifications() {
                   className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                 />
                 {/* Overlay */}
-                <div className="absolute inset-0 bg-gradient-to-t from-foreground/90 via-foreground/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4 text-left">
+                <div className="absolute inset-0 bg-gradient-to-t from-foreground/90 via-foreground/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4 text-start">
                   <div className="flex items-center gap-1.5 text-primary-foreground/80 text-xs mb-1">
                     <ZoomIn className="w-3.5 h-3.5" />
-                    <span>Click to view</span>
+                    <span>{t('Click to view', 'دیکھنے کے لیے کلک کریں')}</span>
                   </div>
                   <p className="text-sm font-bold text-primary-foreground leading-tight">{cert.title}</p>
                   <p className="text-[11px] text-primary-foreground/70 mt-0.5">{cert.issuer}</p>
@@ -66,7 +71,7 @@ export default function Certifications() {
                   <p className="text-[10px] text-muted-foreground truncate">{cert.issuer}</p>
                 </div>
                 {/* Corner ribbon */}
-                <div className="absolute top-3 right-3 w-9 h-9 rounded-full water-gradient flex items-center justify-center shadow-lg">
+                <div className="absolute top-3 end-3 w-9 h-9 rounded-full water-gradient flex items-center justify-center shadow-lg">
                   <Award className="w-4 h-4 text-primary-foreground" />
                 </div>
               </button>
@@ -77,7 +82,7 @@ export default function Certifications() {
         <Dialog open={open !== null} onOpenChange={() => setOpen(null)}>
           <DialogContent className="max-w-3xl p-3 bg-background/95 backdrop-blur-xl max-h-[90vh] overflow-y-auto">
             <DialogTitle className="px-2 pt-1 pb-2 text-base">
-              {open !== null ? certificates[open].title : 'Certificate'}
+              {open !== null ? certificates[open].title : t('Certificate', 'سرٹیفکیٹ')}
               {open !== null && (
                 <span className="block text-xs font-normal text-muted-foreground mt-0.5">
                   {certificates[open].issuer}
@@ -97,7 +102,7 @@ export default function Certifications() {
                     download
                     className="inline-flex items-center gap-2 text-sm font-semibold text-primary hover:underline"
                   >
-                    Download original
+                    {t('Download original', 'اصل فائل ڈاؤن لوڈ کریں')}
                   </a>
                 </div>
               </>

@@ -4,11 +4,13 @@ import { useNavigate } from 'react-router-dom';
 import { useCart } from '@/contexts/CartContext';
 import { useSiteSettings } from '@/hooks/useSiteSettings';
 import { estimateCart, pkr } from '@/lib/pricing';
+import { useLang } from '@/contexts/LanguageContext';
 
 export default function CartSidebar() {
   const { items, isOpen, setIsOpen, removeItem, updateQuantity, promo, applyPromo, removePromo } = useCart();
   const { settings } = useSiteSettings();
   const navigate = useNavigate();
+  const { t } = useLang();
   const [promoInput, setPromoInput] = useState('');
   const [promoError, setPromoError] = useState('');
   const [applying, setApplying] = useState(false);
@@ -37,21 +39,21 @@ export default function CartSidebar() {
     <div className={`fixed inset-0 z-50 ${isOpen ? '' : 'pointer-events-none'}`} aria-hidden={!isOpen}>
       <div className={`absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-300 ${isOpen ? 'opacity-100' : 'opacity-0'}`} onClick={() => setIsOpen(false)} />
       <aside
-        role="dialog" aria-modal="true" aria-label="Your cart"
-        className={`absolute right-0 top-0 h-full w-full max-w-md flex flex-col shadow-2xl transition-transform duration-300 ease-out ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}
-        style={{ background: '#04121f', borderLeft: '1px solid rgba(0,212,255,0.18)' }}
+        role="dialog" aria-modal="true" aria-label={t('Your cart', 'آپ کا کارٹ')}
+        className={`absolute end-0 top-0 h-full w-full max-w-md flex flex-col shadow-2xl transition-transform duration-300 ease-out ${isOpen ? 'translate-x-0' : 'translate-x-full rtl:-translate-x-full'}`}
+        style={{ background: '#04121f', borderInlineStart: '1px solid rgba(0,212,255,0.18)' }}
       >
         <div className="flex items-center justify-between p-4" style={{ borderBottom: '1px solid rgba(0,212,255,0.12)' }}>
-          <h2 className="font-heading font-semibold text-lg text-white flex items-center gap-2"><ShoppingBag className="w-5 h-5 ow-cyan" /> Your Cart</h2>
-          <button className="p-2 rounded-lg text-white/70 hover:text-white hover:bg-white/10" onClick={() => setIsOpen(false)} aria-label="Close cart"><X className="w-5 h-5" /></button>
+          <h2 className="font-heading font-semibold text-lg text-white flex items-center gap-2"><ShoppingBag className="w-5 h-5 ow-cyan" /> {t('Your Cart', 'آپ کا کارٹ')}</h2>
+          <button className="p-2 rounded-lg text-white/70 hover:text-white hover:bg-white/10" onClick={() => setIsOpen(false)} aria-label={t('Close cart', 'کارٹ بند کریں')}><X className="w-5 h-5" /></button>
         </div>
 
         <div className="flex-1 overflow-y-auto p-4">
           {items.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-center gap-3">
               <ShoppingBag className="w-12 h-12 ow-subtle" />
-              <p className="ow-muted">Your cart is empty</p>
-              <button className="ow-btn-ghost !py-2" onClick={() => { setIsOpen(false); navigate('/products'); }}>Browse products</button>
+              <p className="ow-muted">{t('Your cart is empty', 'آپ کا کارٹ خالی ہے')}</p>
+              <button className="ow-btn-ghost !py-2" onClick={() => { setIsOpen(false); navigate('/products'); }}>{t('Browse products', 'پروڈکٹس دیکھیں')}</button>
             </div>
           ) : (
             <ul className="flex flex-col gap-3">
@@ -62,16 +64,16 @@ export default function CartSidebar() {
                     <img src={item.image} alt="" className="w-16 h-16 object-contain rounded" />
                     <div className="flex-1 min-w-0">
                       <h3 className="font-medium text-sm text-white truncate">{item.name}</h3>
-                      <p className="text-xs ow-subtle">{pkr(item.price)} each</p>
-                      {newBottles > 0 && <p className="text-xs text-sky-400">+ {pkr(newBottles * settings.delivery_info.bottle_deposit)} deposit ({newBottles} new bottle{newBottles > 1 ? 's' : ''})</p>}
+                      <p className="text-xs ow-subtle">{t(`${pkr(item.price)} each`, `${pkr(item.price)} فی عدد`)}</p>
+                      {newBottles > 0 && <p className="text-xs text-sky-400">+ {pkr(newBottles * settings.delivery_info.bottle_deposit)} {t(`deposit (${newBottles} new bottle${newBottles > 1 ? 's' : ''})`, `سیکیورٹی (${newBottles} نئی بوتل${newBottles > 1 ? 'یں' : ''})`)}</p>}
                       <p className="font-semibold text-sm text-white mt-1">{pkr(item.price * item.quantity)}</p>
                     </div>
                     <div className="flex flex-col items-end justify-between">
-                      <button className="p-1 text-white/40 hover:text-red-400" onClick={() => removeItem(item.id)} aria-label={`Remove ${item.name}`}><Trash2 className="w-4 h-4" /></button>
+                      <button className="p-1 text-white/40 hover:text-red-400" onClick={() => removeItem(item.id)} aria-label={t(`Remove ${item.name}`, `${item.name} ہٹائیں`)}><Trash2 className="w-4 h-4" /></button>
                       <div className="flex items-center gap-2">
-                        <button className="w-7 h-7 rounded-md flex items-center justify-center text-white bg-white/10 hover:bg-white/20" onClick={() => updateQuantity(item.id, item.quantity - 1)} aria-label="Decrease"><Minus className="w-3 h-3" /></button>
+                        <button className="w-7 h-7 rounded-md flex items-center justify-center text-white bg-white/10 hover:bg-white/20" onClick={() => updateQuantity(item.id, item.quantity - 1)} aria-label={t('Decrease', 'کم کریں')}><Minus className="w-3 h-3" /></button>
                         <span className="text-sm font-semibold text-white w-5 text-center tabular-nums">{item.quantity}</span>
-                        <button className="w-7 h-7 rounded-md flex items-center justify-center text-white bg-white/10 hover:bg-white/20" onClick={() => updateQuantity(item.id, item.quantity + 1)} aria-label="Increase"><Plus className="w-3 h-3" /></button>
+                        <button className="w-7 h-7 rounded-md flex items-center justify-center text-white bg-white/10 hover:bg-white/20" onClick={() => updateQuantity(item.id, item.quantity + 1)} aria-label={t('Increase', 'زیادہ کریں')}><Plus className="w-3 h-3" /></button>
                       </div>
                     </div>
                   </li>
@@ -85,28 +87,28 @@ export default function CartSidebar() {
           <div className="p-4 space-y-3" style={{ borderTop: '1px solid rgba(0,212,255,0.12)' }}>
             {promo ? (
               <div className="flex items-center justify-between text-sm rounded-lg px-3 py-2" style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.3)' }}>
-                <span className="text-emerald-300 flex items-center gap-1.5"><Tag className="w-4 h-4" /> {promo.code} — {promo.discount}% off water</span>
-                <button className="text-xs text-white/60 hover:text-white" onClick={removePromo}>Remove</button>
+                <span className="text-emerald-300 flex items-center gap-1.5"><Tag className="w-4 h-4" /> <bdi dir="ltr">{promo.code}</bdi> — {t(`${promo.discount}% off water`, `پانی پر ${promo.discount}% رعایت`)}</span>
+                <button className="text-xs text-white/60 hover:text-white" onClick={removePromo}>{t('Remove', 'ہٹائیں')}</button>
               </div>
             ) : (
               <div className="flex gap-2">
-                <input className="ow-input !py-2.5" placeholder="Promo code" value={promoInput} onChange={(e) => setPromoInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleApply()} aria-label="Promo code" />
-                <button className="ow-btn-ghost !py-2.5 !px-4 text-sm" onClick={handleApply} disabled={applying}>{applying ? '…' : 'Apply'}</button>
+                <input className="ow-input !py-2.5" placeholder={t('Promo code', 'پرومو کوڈ')} value={promoInput} onChange={(e) => setPromoInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleApply()} aria-label={t('Promo code', 'پرومو کوڈ')} />
+                <button className="ow-btn-ghost !py-2.5 !px-4 text-sm" onClick={handleApply} disabled={applying}>{applying ? '…' : t('Apply', 'لگائیں')}</button>
               </div>
             )}
             {promoError && <p className="ow-error">{promoError}</p>}
-            {belowMin && <p className="text-xs text-amber-300">{promo!.code} needs a minimum water order of {pkr(promo!.minOrder)}.</p>}
+            {belowMin && <p className="text-xs text-amber-300"><bdi dir="ltr">{promo!.code}</bdi> {t(`needs a minimum water order of ${pkr(promo!.minOrder)}.`, `کے لیے کم از کم ${pkr(promo!.minOrder)} کا پانی آرڈر کرنا ضروری ہے۔`)}</p>}
 
             <dl className="space-y-1 text-sm">
-              <div className="flex justify-between ow-muted"><dt>Water</dt><dd>{pkr(est.subtotal)}</dd></div>
-              {est.discount > 0 && !belowMin && <div className="flex justify-between text-emerald-300"><dt>Discount</dt><dd>−{pkr(est.discount)}</dd></div>}
-              {est.deposit > 0 && <div className="flex justify-between ow-muted"><dt>Refundable bottle deposit</dt><dd>{pkr(est.deposit)}</dd></div>}
-              <div className="flex justify-between ow-muted"><dt>Delivery</dt><dd>{est.deliveryFee ? pkr(est.deliveryFee) : 'Free'}</dd></div>
-              <div className="flex justify-between font-heading font-bold text-lg text-white pt-1"><dt>Estimated total</dt><dd>{pkr(belowMin ? est.total + est.discount : est.total)}</dd></div>
+              <div className="flex justify-between ow-muted"><dt>{t('Water', 'پانی')}</dt><dd>{pkr(est.subtotal)}</dd></div>
+              {est.discount > 0 && !belowMin && <div className="flex justify-between text-emerald-300"><dt>{t('Discount', 'رعایت')}</dt><dd dir="ltr">−{pkr(est.discount)}</dd></div>}
+              {est.deposit > 0 && <div className="flex justify-between ow-muted"><dt>{t('Refundable bottle deposit', 'بوتل کی قابلِ واپسی سیکیورٹی')}</dt><dd>{pkr(est.deposit)}</dd></div>}
+              <div className="flex justify-between ow-muted"><dt>{t('Delivery', 'ڈیلیوری')}</dt><dd>{est.deliveryFee ? pkr(est.deliveryFee) : t('Free', 'فری')}</dd></div>
+              <div className="flex justify-between font-heading font-bold text-lg text-white pt-1"><dt>{t('Estimated total', 'اندازاً کل رقم')}</dt><dd>{pkr(belowMin ? est.total + est.discount : est.total)}</dd></div>
             </dl>
 
-            <button className="ow-btn w-full" onClick={() => { setIsOpen(false); navigate('/checkout'); }}>Proceed to Checkout</button>
-            <p className="text-center text-xs ow-subtle">Cash on delivery available · Delivering in {settings.service_areas.cities.join(', ')}</p>
+            <button className="ow-btn w-full" onClick={() => { setIsOpen(false); navigate('/checkout'); }}>{t('Proceed to Checkout', 'چیک آؤٹ کریں')}</button>
+            <p className="text-center text-xs ow-subtle">{t('Cash on delivery available', 'کیش آن ڈیلیوری دستیاب ہے')} · {t('Delivering in', 'ڈیلیوری:')} {settings.service_areas.cities.join(', ')}</p>
           </div>
         )}
       </aside>
