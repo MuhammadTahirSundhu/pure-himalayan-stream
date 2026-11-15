@@ -3,8 +3,8 @@
   "trailingSlash": false,
   "rewrites": [
     { "source": "/api/:path*", "destination": "https://one-water-backend.onrender.com/api/:path*" },
-    { "source": "/admin", "destination": "/app.html" },
-    { "source": "/checkout", "destination": "/app.html" }
+    { "source": "/admin", "destination": "/app" },
+    { "source": "/checkout", "destination": "/app" }
   ],
   "headers": [
     {
