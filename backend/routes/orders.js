@@ -111,6 +111,7 @@ router.post(
         `We currently deliver in ${settings.service_areas.cities.join(', ')} only. Join our waitlist and we'll tell you when we reach ${city}.`);
     }
 
+    const canonicalCity = settings.service_areas.cities.find((c) => c.toLowerCase() === city.trim().toLowerCase());
     const accounts = activePaymentAccounts(settings);
     if (payment_method !== 'cod') {
       if (!accounts.some((a) => a.id === payment_method)) {
@@ -153,7 +154,7 @@ router.post(
            delivery_schedule, customer_note, screenshot_url)
          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)
          RETURNING id, order_ref`,
-        [order_ref, customer_name, phone, city.trim(), area || null, street, payment_method,
+        [order_ref, customer_name, phone, canonicalCity, area || null, street, payment_method,
           priced.subtotal, priced.deposit_total, priced.discount, priced.delivery_fee, priced.total,
           promo?.code || null, hasDispenser ? delivery_schedule || 'once' : null, customer_note || null,
           payment_method === 'cod' ? null : screenshot_url]

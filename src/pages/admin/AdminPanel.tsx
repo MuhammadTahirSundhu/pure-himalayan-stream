@@ -93,13 +93,13 @@ export default function AdminPanel({ onLogout }: { onLogout: (message?: string) 
         <div className="fixed inset-0 bg-black/60 z-40 md:hidden backdrop-blur-sm transition-opacity" onClick={() => setIsSidebarOpen(false)} />
       )}
 
-      <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-foreground text-primary-foreground/80 flex flex-col shrink-0 transform transition-transform duration-300 md:relative md:translate-x-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
-        <div className="p-4 border-b border-primary-foreground/10 flex items-center justify-between shrink-0">
+      <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-[#020a14] text-slate-300 border-r border-cyan-400/10 flex flex-col shrink-0 transform transition-transform duration-300 md:relative md:translate-x-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+        <div className="p-4 border-b border-cyan-400/10 flex items-center justify-between shrink-0">
           <div>
-            <h2 className="font-heading font-bold text-lg text-primary-foreground">OneWater Admin</h2>
-            <p className="text-xs text-primary-foreground/40 mt-0.5">Welcome, {adminUsername}</p>
+            <h2 className="font-heading font-bold text-lg text-white">OneWater Admin</h2>
+            <p className="text-xs text-white/40 mt-0.5">Welcome, {adminUsername}</p>
           </div>
-          <button className="md:hidden text-primary-foreground/60 p-1 hover:text-primary-foreground transition-colors" onClick={() => setIsSidebarOpen(false)} aria-label="Close menu">
+          <button className="md:hidden text-white/60 p-1 hover:text-white transition-colors" onClick={() => setIsSidebarOpen(false)} aria-label="Close menu">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -108,7 +108,7 @@ export default function AdminPanel({ onLogout }: { onLogout: (message?: string) 
             <button
               key={item.id}
               onClick={() => go(item.id)}
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors mb-1 ${tab === item.id ? 'bg-primary/20 text-primary-foreground' : 'hover:bg-primary-foreground/5'}`}
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors mb-1 ${tab === item.id ? 'bg-primary/20 text-white' : 'hover:bg-white/5'}`}
             >
               <item.icon className="w-4 h-4" />
               <span className="flex-1 text-left">{item.label}</span>
@@ -116,8 +116,8 @@ export default function AdminPanel({ onLogout }: { onLogout: (message?: string) 
             </button>
           ))}
         </nav>
-        <div className="p-4 border-t border-primary-foreground/10 shrink-0">
-          <Button variant="ghost" className="w-full text-primary-foreground/60 hover:text-primary-foreground" onClick={() => onLogout()}>
+        <div className="p-4 border-t border-cyan-400/10 shrink-0">
+          <Button variant="ghost" className="w-full text-white/60 hover:text-white" onClick={() => onLogout()}>
             <LogOut className="w-4 h-4 mr-2" /> Logout
           </Button>
         </div>
