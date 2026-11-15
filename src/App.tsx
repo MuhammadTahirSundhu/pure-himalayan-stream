@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { Toaster as Sonner } from '@/components/ui/sonner';
 import { CartProvider } from '@/contexts/CartContext';
+import { LanguageProvider } from '@/contexts/LanguageContext';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import CartSidebar from '@/components/CartSidebar';
@@ -51,6 +52,7 @@ const page = (el: React.ReactNode) => <CustomerLayout>{el}</CustomerLayout>;
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
+    <LanguageProvider>
     <CartProvider>
       <Sonner position="top-center" />
       <BrowserRouter>
@@ -74,6 +76,7 @@ const App = () => (
         </Routes>
       </BrowserRouter>
     </CartProvider>
+    </LanguageProvider>
   </QueryClientProvider>
 );
 

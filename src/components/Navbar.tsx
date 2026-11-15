@@ -4,6 +4,7 @@ import { ShoppingCart, Menu, X, Phone } from 'lucide-react';
 import logoIcon from '@/assets/media/2.webp';
 import { useCart } from '@/contexts/CartContext';
 import { useSiteSettings, telLink } from '@/hooks/useSiteSettings';
+import LanguageToggle from '@/components/site/LanguageToggle';
 
 const navLinks = [
   { to: '/',         label: 'Home'        },
@@ -82,6 +83,7 @@ export default function Navbar() {
 
         {/* Right actions */}
         <div className="flex items-center gap-1">
+          <LanguageToggle />
           <a href={telLink(settings.contact_info.phone)} className="hidden xl:flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-white/80 hover:text-white">
             <Phone className="w-4 h-4 ow-cyan" /> {settings.contact_info.phone}
           </a>

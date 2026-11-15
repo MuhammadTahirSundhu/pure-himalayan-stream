@@ -343,6 +343,17 @@
   .animate-fade-up { animation: fade-up .7s cubic-bezier(.2,.8,.2,1) both; }
 }
 
+/* ── Urdu ─────────────────────────────────────────────────────────────── */
+.font-urdu, html[lang='ur'] body, html[lang='ur'] h1, html[lang='ur'] h2, html[lang='ur'] h3, html[lang='ur'] h4,
+html[lang='ur'] button, html[lang='ur'] input, html[lang='ur'] select, html[lang='ur'] textarea {
+  font-family: 'Noto Nastaliq Urdu', 'Jameel Noori Nastaleeq', 'Urdu Typesetting', serif;
+}
+/* Nastaliq needs taller lines; keep numbers, codes and phone numbers readable LTR. */
+html[lang='ur'] body { line-height: 2; }
+html[lang='ur'] h1, html[lang='ur'] h2, html[lang='ur'] h3 { line-height: 1.9; letter-spacing: 0; }
+html[lang='ur'] code, html[lang='ur'] .tabular-nums, html[lang='ur'] [dir='ltr'] { font-family: 'Inter', sans-serif; }
+html[lang='ur'] .ow-gradient-text { padding-bottom: .15em; }
+
 /* Respect visitors who ask for less motion. */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
